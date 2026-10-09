@@ -43,7 +43,11 @@ def main(argv):
         if not m:
             print("missing in prefs:", name)
             continue
+        # prefs.js holds a JS string literal; Better Notes stores the template text
+        # JSON-encoded inside it, so decode twice
         content = json.loads(m.group(1))
+        if isinstance(content, str) and content.startswith('"'):
+            content = json.loads(content)
         if "\t" in content:
             print("warning: tab characters in", name, "(YAML block indentation uses spaces)")
         body = "\n".join("  " + line if line.strip() else "" for line in content.split("\n"))

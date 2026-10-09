@@ -3,4 +3,36 @@
 # Do not paste this into the Note Template Editor directly.
 name: "[Text] Code Report (Collection)"
 content: |-
-  "// @use-markdown\n${{\n  // Deliberately no @use-refresh here. This heading must stay outside the\n  // refreshable block so it survives refreshes and gives the note its title.\n  var title = \"Code Report\";\n  if (!_env.dryRun) {\n    try {\n      var box = { value: \"Code Report\" };\n      var ok = Services.prompt.prompt(\n        null,\n        \"Code Report\",\n        \"Title for this note. This becomes the note name in your Zotero list.\",\n        box,\n        null,\n        {}\n      );\n      if (ok && box.value.trim()) title = box.value.trim();\n    } catch (e) {\n      try {\n        var typed = Zotero.getMainWindow().prompt(\n          \"Title for this note. This becomes the note name in your Zotero list.\",\n          \"Code Report\"\n        );\n        if (typed && typed.trim()) title = typed.trim();\n      } catch (e2) {\n        // keep the default\n      }\n    }\n  }\n  return \"# \" + title;\n}}$\n\n${await Zotero.BetterNotes.api.template.runTextTemplate(\"[Text] Code Report BODY (do not use)\", { targetNoteId: targetNoteItem ? targetNoteItem.id : undefined, dryRun: _env.dryRun })}"
+  // @use-markdown
+  ${{
+    // Deliberately no @use-refresh here. This heading must stay outside the
+    // refreshable block so it survives refreshes and gives the note its title.
+    var title = "Code Report";
+    if (!_env.dryRun) {
+      try {
+        var box = { value: "Code Report" };
+        var ok = Services.prompt.prompt(
+          null,
+          "Code Report",
+          "Title for this note. This becomes the note name in your Zotero list.",
+          box,
+          null,
+          {}
+        );
+        if (ok && box.value.trim()) title = box.value.trim();
+      } catch (e) {
+        try {
+          var typed = Zotero.getMainWindow().prompt(
+            "Title for this note. This becomes the note name in your Zotero list.",
+            "Code Report"
+          );
+          if (typed && typed.trim()) title = typed.trim();
+        } catch (e2) {
+          // keep the default
+        }
+      }
+    }
+    return "# " + title;
+  }}$
+
+  ${await Zotero.BetterNotes.api.template.runTextTemplate("[Text] Code Report BODY (do not use)", { targetNoteId: targetNoteItem ? targetNoteItem.id : undefined, dryRun: _env.dryRun })}
