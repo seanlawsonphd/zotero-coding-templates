@@ -208,7 +208,7 @@ content: |-
       lines.push("> ");
       var cite = "> **Source:** " + sharedObj.mdEscape(e.source.cite);
       if (e.page) cite += " (p. " + e.page + ")";
-      cite += " [Open highlight](" + e.link + ")";
+      cite += " [\\[Open highlight\\]](" + e.link + ")";
       lines.push(cite);
       if (e.memo) {
         lines.push("> ");
@@ -286,9 +286,15 @@ content: |-
     var out = [];
     out.push("# Theme: " + sharedObj.theme);
     out.push("");
+    out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
+    out.push("");
     out.push("## Scope");
     out.push("");
-    out.push("<span style=\"color: #e03131\"><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</span>");
+    out.push(
+      "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
+      sharedObj.matchedSources.size + " source(s), out of " +
+      sharedObj.sources + " sources scanned.**"
+    );
     out.push("");
     out.push("**Scanned:** " + sharedObj.sources + " selected item(s)");
     out.push("");
@@ -302,13 +308,7 @@ content: |-
     out.push("");
     out.push("**Codes in this theme:** " + (sharedObj.declared.length ? sharedObj.declared.join(", ") : "*(none yet)*"));
     out.push("");
-    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates). You will not be asked again.*");
-    out.push("");
-    out.push(
-      "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
-      sharedObj.matchedSources.size + " source(s), out of " +
-      sharedObj.sources + " sources scanned.**"
-    );
+    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
 
     if (sharedObj.skipped.length) {
@@ -349,7 +349,7 @@ content: |-
     out.push("");
     out.push("## Analytical Notes");
     out.push("");
-    out.push("Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.");
+    out.push("*Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.*");
 
     // First run only: close the regenerated block with a line and add the
     // writing sections after it. A refresh replaces everything up to that line

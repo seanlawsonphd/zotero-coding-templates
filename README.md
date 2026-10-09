@@ -110,13 +110,14 @@ Document per theme.
 
 The note has a generated block followed by space for your writing:
 
-- **Scope.** A warning in red that everything down to the line under Analytical Notes is
-  regenerated on refresh, what was scanned (the collection, or the list of selected items), the
-  **Codes in this theme:** line, and a count of codes, extracts, and sources.
+- A **warning in red** that everything down to the line under Analytical Notes is regenerated on
+  refresh.
+- **Scope.** A count of codes, extracts, and sources, what was scanned (the collection, or the
+  list of selected items), and the **Codes in this theme:** line.
 - **Check these codes:** appears if a code you listed matched nothing. It shows the codes that
   actually exist in those sources, so you can spot a typo.
 - **Evidence.** Each code as a heading, in the order you listed the codes, then each passage as a
-  quotation with its **full reference** (APA style), an **Open highlight** link back to the exact
+  quotation with its **full reference** (APA style), an **[Open highlight]** link back to the exact
   spot in the source, and any memo.
 - **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
   never touched by a refresh. It starts with two headings to fill in:
@@ -126,7 +127,7 @@ The note has a generated block followed by space for your writing:
 
 **Regrouping.** The evidence follows the order of the codes in the **Codes in this theme:** line.
 To reorder the evidence, reorder that line. To add a code to the theme, add it to that line (to
-drop one, delete it). Then refresh the note. The template reads that line instead of asking again.
+drop one, delete it). Then refresh the note.
 
 ## Refreshing a note after more coding
 
