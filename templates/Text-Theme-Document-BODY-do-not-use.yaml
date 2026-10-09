@@ -29,6 +29,38 @@ content: |-
       return lib && lib.isGroup ? "groups/" + lib.id : "library";
     };
 
+
+    // Full reference for a source, in APA style. Change the style id below to use
+    // another installed citation style.
+    var citeFormat = "bibliography=http://www.zotero.org/styles/apa";
+    var citeCache = {};
+    var mdEscape = function (s) {
+      return (s || "").replace(/([\\\x60*_\[\]<>])/g, "\\$1");
+    };
+    var fullCite = function (item, fallback) {
+      var target = item;
+      try {
+        if (item.isAttachment() && item.parentItemID) {
+          target = Zotero.Items.get(item.parentItemID) || item;
+        }
+      } catch (e) {
+        target = item;
+      }
+      if (citeCache[target.id]) return citeCache[target.id];
+      var text = "";
+      try {
+        if (target.isRegularItem()) {
+          var res = Zotero.QuickCopy.getContentFromItems([target], citeFormat);
+          text = ((res && res.text) || "").replace(/\s+/g, " ").trim();
+        }
+      } catch (e) {
+        text = "";
+      }
+      if (!text) text = fallback;
+      citeCache[target.id] = text;
+      return text;
+    };
+
     var describe = function (item) {
       var creators = item.getCreators();
       var author = "No author";
@@ -50,7 +82,12 @@ content: |-
         label: author + " (" + year + ")",
         title: item.getField("title") || "Untitled",
         outlet: outlet,
-        link: "zotero://select/" + scope(item) + "/items/" + item.key
+        link: "zotero://select/" + scope(item) + "/items/" + item.key,
+        cite: fullCite(
+          item,
+          author + " (" + year + "). " + (item.getField("title") || "Untitled") +
+            (outlet ? ". " + outlet : "") + "."
+        )
       };
     };
 
@@ -109,9 +146,9 @@ content: |-
       var lines = [];
       lines.push(e.text ? "> " + e.text : "> *(no highlighted text, memo only)*");
       lines.push("> ");
-      var cite = "> [" + e.source.label + "](" + e.link + ")";
-      if (e.source.outlet) cite += ", *" + e.source.outlet + "*";
-      if (e.page) cite += ", p. " + e.page;
+      var cite = "> **Source:** " + mdEscape(e.source.cite);
+      if (e.page) cite += " (p. " + e.page + ")";
+      cite += " [Open highlight](" + e.link + ")";
       lines.push(cite);
       if (e.memo) {
         lines.push("> ");
@@ -289,10 +326,19 @@ content: |-
     }
 
     // ---------- render ----------
-    var codes = Object.keys(byCode).sort(function (a, b) {
-      return a.toLowerCase().localeCompare(b.toLowerCase());
-    });
-    var found = new Set(codes.map(function (c) { return c.toLowerCase(); }));
+    // Codes appear in the order they are listed in "Codes in this theme", so
+    // reordering that line regroups the evidence.
+    var codes = [];
+    var found = new Set();
+    for (var d = 0; d < declared.length; d++) {
+      var want = declared[d].toLowerCase();
+      Object.keys(byCode).forEach(function (key) {
+        if (key.toLowerCase() === want && codes.indexOf(key) === -1) {
+          codes.push(key);
+          found.add(want);
+        }
+      });
+    }
     var missing = declared.filter(function (c) {
       return !found.has(c.toLowerCase());
     });
@@ -304,13 +350,15 @@ content: |-
     for (var t2 = 0; t2 < codes.length; t2++) total += byCode[codes[t2]].length;
 
     var out = [];
-    out.push("*Scanned " + scopeName + "*");
+    out.push("## Scope");
     out.push("");
-    out.push("> **Everything in this block is regenerated when you refresh this note.** Write your own analysis **below** the block, never inside it, or a refresh will overwrite it. The questions to answer are at the bottom.");
+    out.push("<span style=\"color: #e03131\"><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</span>");
+    out.push("");
+    out.push("**Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
     out.push("");
     out.push("**Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
     out.push("");
-    out.push("*To regroup, edit the line above and refresh this note. You will not be asked again.*");
+    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates). You will not be asked again.*");
     out.push("");
     out.push(
       "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
@@ -336,22 +384,17 @@ content: |-
       out.push("");
     }
 
-    if (!codes.length) {
-      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
-      return out.join("\n");
-    }
-
-    out.push("## Codes gathered under this theme");
-    out.push("");
-    for (var k2 = 0; k2 < codes.length; k2++) {
-      out.push("- **" + codes[k2] + "** (" + byCode[codes[k2]].length + " extract(s))");
-    }
-    out.push("");
     out.push("## Evidence");
+    if (!codes.length) {
+      out.push("");
+      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
+    }
     for (var n2 = 0; n2 < codes.length; n2++) {
       var list = byCode[codes[n2]];
       out.push("");
       out.push("### " + codes[n2]);
+      out.push("");
+      out.push("*" + list.length + " extract(s)*");
       for (var p2 = 0; p2 < list.length; p2++) {
         out.push("");
         out.push(renderExtract(list[p2]));
@@ -359,11 +402,9 @@ content: |-
     }
 
     out.push("");
-    out.push("## Now write your analysis, below this block");
+    out.push("## Analytical Notes");
     out.push("");
-    out.push("**Central organizing concept.** In two or three sentences, state what this theme is about, what holds these codes together, and what it tells you about the propaganda you collected. If you cannot write it without walking through the codes one at a time, you have a topic summary rather than a theme.");
-    out.push("");
-    out.push("**Analytic notes.** How do these codes relate to each other? Is one of them doing most of the work, so the others should fold into it? Does any extract sit awkwardly here and belong somewhere else? Which sources carry this theme, and which do not carry it at all?");
+    out.push("Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.");
 
     return out.join("\n");
   }}$

@@ -108,25 +108,25 @@ Document per theme.
 4. **List the codes** that belong to the theme, separated by commas, spelled exactly as you tagged
    them. The list does not have to be final (see "Regrouping" below).
 
-The note contains a generated block followed by space for your writing:
+The note has a generated block followed by space for your writing:
 
-- A warning that **everything in the block is regenerated when you refresh**, so your own writing
-  must go **below** the block.
-- **Codes in this theme:** the list you typed, and a count of codes, extracts, and sources.
+- **Scope.** A warning in red that everything down to the line under Analytical Notes is
+  regenerated on refresh, what was scanned (the collection, or the list of selected items), the
+  **Codes in this theme:** line, and a count of codes, extracts, and sources.
 - **Check these codes:** appears if a code you listed matched nothing. It shows the codes that
   actually exist in those sources, so you can spot a typo.
-- **Codes gathered under this theme** and **Evidence**: every passage for each code, with
-  citations and memos, like the Code Report.
-- **Now write your analysis, below this block**, with two prompts:
-  - **Central organizing concept.** Two or three sentences: what the theme is about, what holds
-    these codes together, and what it tells you about the material you collected. If you can only
-    describe it by walking through the codes one at a time, you have a topic summary, not a theme.
-  - **Analytic notes.** How the codes relate; whether one does most of the work; which extracts sit
-    awkwardly and belong elsewhere; which sources carry the theme and which do not.
+- **Evidence.** Each code as a heading, in the order you listed the codes, then each passage as a
+  quotation with its **full reference** (APA style), an **Open highlight** link back to the exact
+  spot in the source, and any memo.
+- **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
+  never touched by a refresh. It starts with two headings to fill in:
+  - **Theme Definition.** Two or three sentences on what this theme is about and what holds these
+    codes together as a coherent theme.
+  - **Insights & Observations.** Anything else that will help when you write your final report.
 
-**Regrouping.** To change which codes make up the theme, edit the **Codes in this theme:** line in
-the note (or the **Theme:** heading) and refresh the note. The template reads those lines instead
-of asking again.
+**Regrouping.** The evidence follows the order of the codes in the **Codes in this theme:** line.
+To reorder the evidence, reorder that line. To add a code to the theme, add it to that line (to
+drop one, delete it). Then refresh the note. The template reads that line instead of asking again.
 
 ## Refreshing a note after more coding
 
@@ -150,6 +150,8 @@ holds the library, so the quotations and citations in the exported file are what
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
 | The template is not listed in the picker | Install all six files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
 | The note's title went blank after a refresh | Use the Collection versions; their title line is kept outside the refreshed block. The Item versions put everything inside it |
+| A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
+| The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
 | "Preview mode does not scan the library" | You are in the Template Editor's preview. Run the template from **New Standalone Note from Template** instead |
 
 Group libraries work the same way; the links inside the notes point into the group.

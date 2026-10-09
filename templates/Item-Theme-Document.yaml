@@ -89,6 +89,38 @@ content: |-
       return (s || "").replace(/\s+/g, " ").trim();
     };
 
+
+    // Full reference for a source, in APA style. Change the style id below to use
+    // another installed citation style.
+    sharedObj.citeFormat = "bibliography=http://www.zotero.org/styles/apa";
+    sharedObj.citeCache = {};
+    sharedObj.mdEscape = function (s) {
+      return (s || "").replace(/([\\\x60*_\[\]<>])/g, "\\$1");
+    };
+    sharedObj.fullCite = function (item, fallback) {
+      var target = item;
+      try {
+        if (item.isAttachment() && item.parentItemID) {
+          target = Zotero.Items.get(item.parentItemID) || item;
+        }
+      } catch (e) {
+        target = item;
+      }
+      if (sharedObj.citeCache[target.id]) return sharedObj.citeCache[target.id];
+      var text = "";
+      try {
+        if (target.isRegularItem()) {
+          var res = Zotero.QuickCopy.getContentFromItems([target], sharedObj.citeFormat);
+          text = ((res && res.text) || "").replace(/\s+/g, " ").trim();
+        }
+      } catch (e) {
+        text = "";
+      }
+      if (!text) text = fallback;
+      sharedObj.citeCache[target.id] = text;
+      return text;
+    };
+
     sharedObj.describe = function (item) {
       var creators = item.getCreators();
       var author = "No author";
@@ -110,7 +142,12 @@ content: |-
         label: author + " (" + year + ")",
         title: item.getField("title") || "Untitled",
         outlet: outlet,
-        link: "zotero://select/" + sharedObj.scope(item) + "/items/" + item.key
+        link: "zotero://select/" + sharedObj.scope(item) + "/items/" + item.key,
+        cite: sharedObj.fullCite(
+          item,
+          author + " (" + year + "). " + (item.getField("title") || "Untitled") +
+            (outlet ? ". " + outlet : "") + "."
+        )
       };
     };
 
@@ -169,9 +206,9 @@ content: |-
       var lines = [];
       lines.push(e.text ? "> " + e.text : "> *(no highlighted text, memo only)*");
       lines.push("> ");
-      var cite = "> [" + e.source.label + "](" + e.link + ")";
-      if (e.source.outlet) cite += ", *" + e.source.outlet + "*";
-      if (e.page) cite += ", p. " + e.page;
+      var cite = "> **Source:** " + sharedObj.mdEscape(e.source.cite);
+      if (e.page) cite += " (p. " + e.page + ")";
+      cite += " [Open highlight](" + e.link + ")";
       lines.push(cite);
       if (e.memo) {
         lines.push("> ");
@@ -179,6 +216,12 @@ content: |-
       }
       return lines.join("\n");
     };
+
+    sharedObj.sourceList = [];
+    // Add the writing sections only when the note does not have them yet
+    sharedObj.hasTrailer = /<h3[^>]*>\s*Theme Definition/.test(
+      (targetNoteItem && typeof targetNoteItem.getNote === "function" && targetNoteItem.getNote()) || ""
+    );
 
     return "";
   }}$
@@ -188,6 +231,7 @@ content: |-
   ${{
     sharedObj.sources += 1;
     var res = await sharedObj.harvest(topItem);
+    sharedObj.sourceList.push(res.source);
     // Skipped annotations still count as codes seen, so a code that exists only
     // on image annotations is not reported as a typo.
     for (var s = 0; s < res.skipped.length; s++) {
@@ -216,10 +260,19 @@ content: |-
   // @afterloop-begin
   // @use-markdown
   ${{
-    var codes = Object.keys(sharedObj.byCode).sort(function (a, b) {
-      return a.toLowerCase().localeCompare(b.toLowerCase());
-    });
-    var found = new Set(codes.map(function (c) { return c.toLowerCase(); }));
+    // Codes appear in the order they are listed in "Codes in this theme", so
+    // reordering that line regroups the evidence.
+    var codes = [];
+    var found = new Set();
+    for (var d = 0; d < sharedObj.declared.length; d++) {
+      var want = sharedObj.declared[d].toLowerCase();
+      Object.keys(sharedObj.byCode).forEach(function (key) {
+        if (key.toLowerCase() === want && codes.indexOf(key) === -1) {
+          codes.push(key);
+          found.add(want);
+        }
+      });
+    }
     var missing = sharedObj.declared.filter(function (c) {
       return !found.has(c.toLowerCase());
     });
@@ -233,16 +286,28 @@ content: |-
     var out = [];
     out.push("# Theme: " + sharedObj.theme);
     out.push("");
-    out.push("> **Everything in this block is regenerated when you refresh this note.** Write your own analysis **below** the block, never inside it, or a refresh will overwrite it. The questions to answer are at the bottom.");
+    out.push("## Scope");
+    out.push("");
+    out.push("<span style=\"color: #e03131\"><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</span>");
+    out.push("");
+    out.push("**Scanned:** " + sharedObj.sources + " selected item(s)");
+    out.push("");
+    var shown = sharedObj.sourceList.slice(0, 30);
+    for (var s = 0; s < shown.length; s++) {
+      out.push("- [" + sharedObj.mdEscape(shown[s].label) + "](" + shown[s].link + ") " + sharedObj.mdEscape(shown[s].title));
+    }
+    if (sharedObj.sourceList.length > shown.length) {
+      out.push("- and " + (sharedObj.sourceList.length - shown.length) + " more");
+    }
     out.push("");
     out.push("**Codes in this theme:** " + (sharedObj.declared.length ? sharedObj.declared.join(", ") : "*(none yet)*"));
     out.push("");
-    out.push("*To regroup, edit the line above and refresh this note. You will not be asked again.*");
+    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates). You will not be asked again.*");
     out.push("");
     out.push(
       "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
       sharedObj.matchedSources.size + " source(s), out of " +
-      sharedObj.sources + " sources searched.**"
+      sharedObj.sources + " sources scanned.**"
     );
     out.push("");
 
@@ -260,26 +325,21 @@ content: |-
     if (missing.length) {
       out.push("> **Check these codes:** " + missing.join(", ") + ". No quotable extract matched them. Codes match on exact spelling, so look for a typo or different capitalization.");
       out.push(">");
-      out.push("> Codes actually present in the sources you selected: " + (seenList.length ? seenList.join(", ") : "none"));
+      out.push("> Codes actually present in what was scanned: " + (seenList.length ? seenList.join(", ") : "none"));
       out.push("");
     }
 
-    if (!codes.length) {
-      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
-      return out.join("\n");
-    }
-
-    out.push("## Codes gathered under this theme");
-    out.push("");
-    for (var k = 0; k < codes.length; k++) {
-      out.push("- **" + codes[k] + "** (" + sharedObj.byCode[codes[k]].length + " extract(s))");
-    }
-    out.push("");
     out.push("## Evidence");
+    if (!codes.length) {
+      out.push("");
+      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
+    }
     for (var n = 0; n < codes.length; n++) {
       var list = sharedObj.byCode[codes[n]];
       out.push("");
       out.push("### " + codes[n]);
+      out.push("");
+      out.push("*" + list.length + " extract(s)*");
       for (var p = 0; p < list.length; p++) {
         out.push("");
         out.push(sharedObj.renderExtract(list[p]));
@@ -287,11 +347,19 @@ content: |-
     }
 
     out.push("");
-    out.push("## Now write your analysis, below this block");
+    out.push("## Analytical Notes");
     out.push("");
-    out.push("**Central organizing concept.** In two or three sentences, state what this theme is about, what holds these codes together, and what it tells you about the propaganda you collected. If you cannot write it without walking through the codes one at a time, you have a topic summary rather than a theme.");
-    out.push("");
-    out.push("**Analytic notes.** How do these codes relate to each other? Is one of them doing most of the work, so the others should fold into it? Does any extract sit awkwardly here and belong somewhere else? Which sources carry this theme, and which do not carry it at all?");
+    out.push("Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.");
+
+    // First run only: close the regenerated block with a line and add the
+    // writing sections after it. A refresh replaces everything up to that line
+    // and leaves what follows alone.
+    if (!sharedObj.hasTrailer && !_env.dryRun) {
+      out.push("");
+      out.push("---");
+      out.push("");
+      out.push("<h3>Theme Definition</h3>\n<p></p>\n<p></p>\n<h3>Insights &amp; Observations</h3>\n<p></p>");
+    }
 
     return out.join("\n");
   }}$
