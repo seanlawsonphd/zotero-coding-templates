@@ -2,29 +2,35 @@
 
 These templates turn Zotero into a simple qualitative-coding tool for class projects. You read
 your sources in Zotero, highlight passages, and tag each highlight with a **code**. The templates
-then build four kinds of notes for you:
+then build notes that do the bookkeeping for you:
 
-- A **Code Overview** counts every code you have used: how many extracts and sources each has.
-- A **Code Matrix** shows how often each pair of codes lands on the same passage.
-- A **Code Report** gathers every passage for **one code**, with a quotation, a full reference, a
-  link back to the exact spot in the source, and any memo you wrote.
-- A **Theme Document** gathers the passages for a chosen group of codes (a theme) and gives you a
-  place to write your analysis of that theme.
+| Note | What it gives you | When to use it |
+|---|---|---|
+| **Code Overview** | Every code, with how many extracts and sources it has | After each round of coding |
+| **Uncoded Highlights** | Highlights that have no code yet | Before you start analysing |
+| **Codebook** | Every code with an example, plus a place to define each one | Once your codes settle |
+| **Code Matrix** | How often each pair of codes lands on the same passage | When looking for codes that belong together |
+| **Code by Source** | Which codes appear in which publications and sources | When comparing outlets or sources |
+| **Code Report** | Every passage for **one code**, with full references | When reading one code closely |
+| **Memo Report** | Every memo (comment) you wrote on a highlight | When reviewing your own thinking |
+| **Analytic Memo** | A blank memo with headings, for longer reflections | Any time an idea needs more room |
+| **Theme Document** | The passages for a group of codes, with space for your analysis | When building themes |
+| **Theme Map** | All your themes and codes in one place, with gaps flagged | When reviewing your themes |
 
-All four can be **refreshed** after you do more coding, so you never rebuild them by hand.
+All of them except the Analytic Memo can be **refreshed** after you do more coding, so you never
+rebuild them by hand.
 
 ## What is in this folder
 
-Each kind of note comes in two versions. Run the one that fits what you want to scan:
+Each note comes in two versions. In the template list, pick the one that fits what you want to scan:
 
-| To scan | Code Overview | Code Matrix | Code Report | Theme Document |
-|---|---|---|---|---|
-| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Matrix (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
-| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Matrix` | `[Item] Code Report` | `[Item] Theme Document` |
+- **`[Text] … (Collection)`** scans the collection highlighted in the left pane. Recommended.
+- **`[Item] …`** scans the items you have selected in the middle pane.
 
-Each of those eight has a helper whose name ends in **BODY (do not use)**. The helpers do the real
-work and are called by name, so they must be installed, but you never run them yourself. That
-makes **sixteen files** in the `templates` folder, and all sixteen must be installed.
+Every template also has a helper whose name ends in **BODY (do not use)**. The helpers do the real
+work and are called by name, so they must be installed, but you never run them yourself. With
+nine reports, two versions each, a helper for each, and the Analytic Memo, the `templates` folder
+holds **37 files**. The installer plugin adds them all at once.
 
 ## Before you start
 
@@ -58,14 +64,14 @@ Both land in your **Downloads** folder. If your browser asks what to do with the
 4. Pick the Better Notes `.xpi` from your Downloads folder.
 5. Repeat steps 3 and 4 for the Coding Templates `.xpi`.
 
-A small message at the bottom corner of the screen says **Coding templates installed (16)**.
+A small message at the bottom corner of the screen says **Coding templates installed (37)**.
 That is all. You do not need to restart Zotero.
 
 ### 3. Check that it worked
 
 Click the **New Note** button above the item list (the note icon with a plus) and choose
-**New Standalone Note from Template**. The list should include Code Overview, Code Matrix,
-Code Report, and Theme Document.
+**New Standalone Note from Template**. The list should include Code Overview, Codebook, Code Matrix,
+Code Report, Theme Document, and the others in the table above.
 
 ### Good to know
 
@@ -82,7 +88,7 @@ Code Report, and Theme Document.
 <details>
 <summary>Installing by hand instead (not needed if you used the plugin)</summary>
 
-For each of the sixteen files in the `templates` folder: open the file, select all of its text,
+For each of the 37 files in the `templates` folder: open the file, select all of its text,
 copy it, then in Zotero choose **Tools → New Template from Clipboard** and click **OK**.
 
 </details>
@@ -236,6 +242,60 @@ accept more than a plain list. Type an expression there (and refresh, if the not
 **What "Scanned" shows.** Collection versions name the collection and the number of sources in
 it. Selected-items versions list the full reference of each item.
 
+## More reports
+
+Each of these is made the same way as the others: click the collection (or select items), then
+**New Note → New Standalone Note from Template**, and pick the template. All use the same layout:
+a red refresh warning, **Scope**, the report itself, and, where it helps, **Analytical Notes** with
+a line you write below.
+
+### Uncoded Highlights
+
+Lists every highlight that has no code, with its reference and an **[Open highlight]** link. Use
+it as a checklist: open each one, add a code or delete the highlight, then refresh until the list
+is empty.
+
+### Codebook
+
+A table of every code with its number of extracts and sources and one example passage. Below the
+line, under **Code definitions**, each code gets its own heading with three prompts:
+**Definition**, **Use it when**, and **Do not use it when**. Fill these in.
+
+The definitions are yours and are never overwritten. When you add or rename codes, refresh the
+note. It will tell you which codes have no definition yet, and which definitions no longer match a
+code. To add a definition for a new code, type the code's name on its own line under Code
+definitions and give that line the **Heading 3** style, spelled exactly like the code.
+
+### Code by Source
+
+Two tables. **Codes by publication** has a column for each publication (RT, TASS, and so on) and
+shows how many extracts carry each code there. **Codes by source** has a row for each source. Use
+them to see whether a code is concentrated in one outlet or spread across all of them.
+Publications come from each item's Publication field, so make sure that field is filled in.
+
+### Memo Report
+
+Gathers every comment you wrote on a highlight, with the passage, its reference, and its codes.
+It includes memos on highlights that have no code yet, since early ideas often come before a code
+does. To write a memo, open a source, click a highlight in the annotations sidebar, and type in
+its comment box.
+
+### Analytic Memo
+
+**[Text] Analytic Memo** makes a blank, dated note with four headings: *What I noticed*, *What it
+might mean*, *Evidence*, and *What to check next*. It does not scan anything and is never
+regenerated, so write anywhere in it. Use it for ideas that need more room than a comment on a
+highlight.
+
+### Theme Map
+
+Reads every Theme Document in the collection and shows, in one place: each theme with its codes
+and how many extracts it gathers; each code with the themes it belongs to; and a **Check these**
+list of codes in no theme, codes in several themes, codes a theme names that do not exist, and how
+many coded extracts no theme covers. Keep your Theme Documents in the same collection as your
+sources so the map can find them. For the selected-items version, select the theme notes together
+with their sources.
+
 ## Refreshing a note after more coding
 
 Open the note, click the **⋯ (More Options)** button in the note editor's toolbar, and choose
@@ -275,7 +335,7 @@ Group libraries work the same way; the links inside the notes point into the gro
   (bundles the templates into the plugin and records the new version in `updates.json`), commit
   and push, then run `gh release create v<version> plugin/build/coding-templates-<version>.xpi`.
   Installed copies update themselves and reinstall the templates.
-- The plugin overwrites the sixteen bundled templates when its version changes or one is missing.
+- The plugin overwrites the bundled templates when its version changes or one is missing.
   It never touches templates with other names. Renamed or retired templates go in the `OBSOLETE`
   list in `plugin/src/coding-templates.js` so they are removed from students' computers.
 - Edit a template in **Tools → Template Editor** (select it, edit, **Save**). To share the edited

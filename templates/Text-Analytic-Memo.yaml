@@ -1,0 +1,42 @@
+# Better Notes template share code. To install: copy this whole file's contents,
+# then in Zotero choose Tools -> New Template from Clipboard, and click OK.
+# Do not paste this into the Note Template Editor directly.
+name: "[Text] Analytic Memo"
+content: |-
+  ${{
+    // A blank memo with headings. Nothing here is regenerated, so write anywhere.
+    var title = "";
+    if (!_env.dryRun) {
+      var question = "What is this memo about? This becomes the note name in your Zotero list.";
+      try {
+        var box = { value: "" };
+        var ok = Services.prompt.prompt(null, "Analytic Memo", question, box, null, {});
+        if (ok) title = box.value.trim();
+      } catch (e) {
+        try {
+          title = (Zotero.getMainWindow().prompt(question, "") || "").trim();
+        } catch (e2) {
+          title = "";
+        }
+      }
+    }
+    if (!title) title = "Untitled";
+    var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+    var where = "";
+    try {
+      var coll = Zotero.getActiveZoteroPane().getSelectedCollection();
+      if (coll) where = " \u00b7 Collection: " + esc(coll.name);
+    } catch (e) {
+      where = "";
+    }
+    var parts = [
+      "<h1>Memo: " + esc(title) + "</h1>",
+      "<p><em>" + new Date().toLocaleDateString() + where + "</em></p>",
+      "<h3>What I noticed</h3>", "<p></p>", "<p></p>",
+      "<h3>What it might mean</h3>", "<p></p>", "<p></p>",
+      "<h3>Evidence</h3>",
+      "<p><em>Codes, sources, or passages this memo is about.</em></p>", "<p></p>",
+      "<h3>What to check next</h3>", "<p></p>", "<p></p>"
+    ];
+    return parts.join("\n");
+  }}$

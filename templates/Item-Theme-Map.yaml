@@ -1,0 +1,41 @@
+# Better Notes template share code. To install: copy this whole file's contents,
+# then in Zotero choose Tools -> New Template from Clipboard, and click OK.
+# Do not paste this into the Note Template Editor directly.
+name: "[Item] Theme Map"
+content: |-
+  // @beforeloop-begin
+  ${{
+    // This outer template is not refreshable on purpose. It writes the title
+    // line, which becomes the note name. The refreshable part comes from the
+    // BODY template.
+    var body = await Zotero.BetterNotes.api.template.runItemTemplate(
+      "[Item] Theme Map BODY (do not use)",
+      {
+        itemIds: items.map(function (item) { return item.id; }),
+        targetNoteId: targetNoteItem ? targetNoteItem.id : undefined,
+        dryRun: _env.dryRun
+      }
+    );
+    var title = "Theme Map";
+    if (!_env.dryRun) {
+      var question = "Title for this note. This becomes the note name in your Zotero list.";
+      try {
+        var box = { value: "Theme Map" };
+        var ok = Services.prompt.prompt(null, "Theme Map", question, box, null, {});
+        if (ok && box.value.trim()) title = box.value.trim();
+      } catch (e) {
+        try {
+          var typed = Zotero.getMainWindow().prompt(question, "Theme Map");
+          if (typed && typed.trim()) title = typed.trim();
+        } catch (e2) {
+          // keep the default
+        }
+      }
+    }
+    title = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    var defs = "\n<h3>Insights &amp; Observations</h3>\n<p></p>\n<p></p>";
+    return "<h1>" + title + "</h1>\n" + body + defs;
+  }}$
+  // @beforeloop-end
+  // @default-begin
+  // @default-end
