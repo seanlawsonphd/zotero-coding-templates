@@ -20,9 +20,10 @@ Both notes can be **refreshed** after you do more coding, so you never rebuild t
 | `[Item] Theme Document` | A theme document built from **selected items** |
 | `[Text] Code Report BODY (do not use)` | Helper used by the Collection version. Install it, never run it |
 | `[Text] Theme Document BODY (do not use)` | Helper used by the Collection version. Install it, never run it |
+| `[Item] Code Report BODY (do not use)` | Helper used by the selected-items version. Install it, never run it |
 | `[Item] Theme Document BODY (do not use)` | Helper used by the selected-items version. Install it, never run it |
 
-The `templates` folder holds one file per template. All seven must be installed; the three "BODY"
+The `templates` folder holds one file per template. All eight must be installed; the four "BODY"
 helpers do the real work for the templates that call them by name.
 
 ## Before you start
@@ -38,7 +39,7 @@ helpers do the real work for the templates that call them by name.
 Templates live inside your own copy of Zotero; they are not shared through Zotero sync, so every
 student does this once.
 
-For **each of the seven files** in the `templates` folder:
+For **each of the eight files** in the `templates` folder:
 
 1. Open the file on GitHub and click **Raw** (top right of the file view), or open it in any text
    editor.
@@ -47,7 +48,7 @@ For **each of the seven files** in the `templates` folder:
 3. In Zotero, choose **Tools → New Template from Clipboard** and click **OK**.
 
 To check: **Tools → Template Editor** lists every template you have installed. You should see all
-seven names from the table above.
+eight names from the table above.
 
 ## Step 1: Code your sources
 
@@ -80,15 +81,20 @@ behind them.
 3. Choose **[Text] Code Report (Collection)**.
 4. Type a title for the note (it becomes the note's name in your library) and click **OK**.
 
-The note opens with:
+The note has the same layout as a Theme Document:
 
-- **Sources processed**, **sources with coded extracts**, and the number of **distinct codes**.
-- **Codebook at a glance**: a table of every code with how many extracts and sources it has.
-- **Extracts by code**: each code as a heading, then each passage as a quotation with a citation
-  such as *Smith (2024), The Guardian, p. 3*. The citation is a link; clicking it opens the source
-  at that highlight. Memos appear as **Memo:** lines, and passages that carry other codes too are
-  marked *Also coded:*.
-- **Sources with no coded extracts**: items in the collection you have not coded yet.
+- A **warning in red** that everything down to the line under Analytical Notes is regenerated on
+  refresh.
+- **Scope.** A count of codes, extracts, and sources, what was scanned with the full reference of
+  every source, and when the report was generated.
+- **Codebook at a glance.** A table of every code with how many extracts and sources it has.
+- **Evidence.** Each code as a heading, in alphabetical order, then each passage as a quotation
+  with its **full reference** (APA style), an **[Open highlight]** link back to the exact spot in
+  the source, and any memo. Passages that carry other codes too are marked *Also coded:*.
+- **Sources with no coded extracts.** Sources you have not coded yet.
+- **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
+  never touched by a refresh. It starts with an **Insights & Observations** heading: a good place
+  to note which codes might belong together as themes, or which overlap and need renaming.
 
 If no collection is highlighted, the template asks you to type a collection name, or `*` to scan
 your whole library.
@@ -149,8 +155,8 @@ holds the library, so the quotations and citations in the exported file are what
 | "Check these codes: …" in a Theme Document | A code in your list is spelled differently from the tag. Copy the exact spelling from the "codes actually present" list or from the Code Report, edit the **Codes in this theme:** line, and refresh |
 | "N coded annotation(s) skipped" | Those are image or area annotations with no text and no memo. Add a comment to each one, then refresh |
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
-| The template is not listed in the picker | Install all seven files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
-| A Code Report made from selected items has no title | Use **[Text] Code Report (Collection)**, whose title line sits outside the refreshed block. Both Theme Document versions already do this |
+| The template is not listed in the picker | Install all eight files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
+| A note made before the templates were updated will not refresh properly | The templates were restructured. Make a new note from the template |
 | A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
 | The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
 | "Preview mode does not scan the library" | You are in the Template Editor's preview. Run the template from **New Standalone Note from Template** instead |

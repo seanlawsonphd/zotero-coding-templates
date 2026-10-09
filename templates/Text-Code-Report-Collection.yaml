@@ -36,3 +36,7 @@ content: |-
   }}$
 
   ${await Zotero.BetterNotes.api.template.runTextTemplate("[Text] Code Report BODY (do not use)", { targetNoteId: targetNoteItem ? targetNoteItem.id : undefined, dryRun: _env.dryRun })}
+
+  <h3>Insights &amp; Observations</h3>
+  <p></p>
+  <p></p>

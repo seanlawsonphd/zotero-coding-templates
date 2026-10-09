@@ -3,210 +3,38 @@
 # Do not paste this into the Note Template Editor directly.
 name: "[Item] Code Report"
 content: |-
-  // @use-refresh
   // @beforeloop-begin
-  // @use-markdown
   ${{
-    sharedObj.byCode = {};
-    sharedObj.sources = 0;
-    sharedObj.codedSources = 0;
-    sharedObj.uncoded = [];
-    sharedObj.skipped = [];
-
-    sharedObj.scope = function (item) {
-      var lib = Zotero.Libraries.get(item.libraryID);
-      return lib && lib.isGroup ? "groups/" + lib.id : "library";
-    };
-
-    sharedObj.clean = function (s) {
-      return (s || "").replace(/\s+/g, " ").trim();
-    };
-
-    sharedObj.describe = function (item) {
-      var creators = item.getCreators();
-      var author = "No author";
-      if (creators.length === 1) {
-        author = creators[0].lastName || creators[0].firstName || "No author";
-      } else if (creators.length > 1) {
-        author = (creators[0].lastName || creators[0].firstName) + " et al.";
-      }
-      var date = item.getField("date") || "";
-      var m = date.match(/\d{4}/);
-      var year = m ? m[0] : "n.d.";
-      var outlet =
-        item.getField("publicationTitle") ||
-        item.getField("websiteTitle") ||
-        item.getField("publisher") ||
-        item.getField("blogTitle") ||
-        "";
-      return {
-        label: author + " (" + year + ")",
-        title: item.getField("title") || "Untitled",
-        outlet: outlet,
-        link: "zotero://select/" + sharedObj.scope(item) + "/items/" + item.key
-      };
-    };
-
-    sharedObj.harvest = async function (item) {
-      var source = sharedObj.describe(item);
-      var attIDs = item.isAttachment() ? [item.id] : item.getAttachments();
-      var out = [];
-      var skipped = [];
-      for (var i = 0; i < attIDs.length; i++) {
-        var att = Zotero.Items.get(attIDs[i]);
-        if (!att) {
-          try {
-            att = await Zotero.Items.getAsync(attIDs[i]);
-          } catch (e) {
-            continue;
-          }
-        }
-        if (!att) continue;
-        var anns = [];
+    // This outer template is not refreshable on purpose. It writes the title
+    // line, which becomes the note name, and the writing heading at the end.
+    // The refreshable part in between comes from the BODY template.
+    var title = "Code Report";
+    if (!_env.dryRun) {
+      var question = "Title for this note. This becomes the note name in your Zotero list.";
+      try {
+        var box = { value: "Code Report" };
+        var ok = Services.prompt.prompt(null, "Code Report", question, box, null, {});
+        if (ok && box.value.trim()) title = box.value.trim();
+      } catch (e) {
         try {
-          anns = att.getAnnotations() || [];
-        } catch (e) {
-          anns = [];
-        }
-        for (var j = 0; j < anns.length; j++) {
-          var ann = anns[j];
-          var text = sharedObj.clean(ann.annotationText);
-          var memo = sharedObj.clean(ann.annotationComment);
-          var codes = ann
-            .getTags()
-            .map(function (t) { return t.tag; })
-            .filter(function (t) { return t && t.indexOf("zotero://") !== 0; });
-          if (!codes.length) continue;
-          // Coded, but nothing to quote. Usually an image or area annotation.
-          // Record it so the report can say so instead of dropping it silently.
-          if (!text && !memo) {
-            skipped.push({ codes: codes, source: source });
-            continue;
-          }
-          out.push({
-            text: text,
-            memo: memo,
-            codes: codes,
-            source: source,
-            page: ann.annotationPageLabel || "",
-            link:
-              "zotero://open/" + sharedObj.scope(item) + "/items/" +
-              att.key + "?annotation=" + ann.key
-          });
+          var typed = Zotero.getMainWindow().prompt(question, "Code Report");
+          if (typed && typed.trim()) title = typed.trim();
+        } catch (e2) {
+          // keep the default
         }
       }
-      return { source: source, extracts: out, skipped: skipped };
-    };
-
-    sharedObj.renderExtract = function (e, showCodes) {
-      var lines = [];
-      lines.push(e.text ? "> " + e.text : "> *(no highlighted text, memo only)*");
-      lines.push("> ");
-      var cite = "> [" + e.source.label + "](" + e.link + ")";
-      if (e.source.outlet) cite += ", *" + e.source.outlet + "*";
-      if (e.page) cite += ", p. " + e.page;
-      lines.push(cite);
-      if (e.memo) {
-        lines.push("> ");
-        lines.push("> **Memo:** " + e.memo);
+    }
+    var esc = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    var body = await Zotero.BetterNotes.api.template.runItemTemplate(
+      "[Item] Code Report BODY (do not use)",
+      {
+        itemIds: items.map(function (item) { return item.id; }),
+        targetNoteId: targetNoteItem ? targetNoteItem.id : undefined,
+        dryRun: _env.dryRun
       }
-      if (showCodes && e.codes.length > 1) {
-        lines.push("> ");
-        lines.push("> *Also coded:* " + e.codes.join(", "));
-      }
-      return lines.join("\n");
-    };
-
-    return "# Code Report\n\nGenerated " + new Date().toLocaleString() + "\n";
+    );
+    return "<h1>" + esc + "</h1>\n" + body + "\n" + "<h3>Insights &amp; Observations</h3>\n<p></p>\n<p></p>";
   }}$
   // @beforeloop-end
   // @default-begin
-  // @use-markdown
-  ${{
-    sharedObj.sources += 1;
-    var res = await sharedObj.harvest(topItem);
-    for (var s = 0; s < res.skipped.length; s++) {
-      sharedObj.skipped.push(res.skipped[s]);
-    }
-    if (!res.extracts.length) {
-      sharedObj.uncoded.push(res.source);
-      return "";
-    }
-    sharedObj.codedSources += 1;
-    for (var i = 0; i < res.extracts.length; i++) {
-      var e = res.extracts[i];
-      for (var j = 0; j < e.codes.length; j++) {
-        var c = e.codes[j];
-        if (!sharedObj.byCode[c]) sharedObj.byCode[c] = [];
-        sharedObj.byCode[c].push(e);
-      }
-    }
-    return "";
-  }}$
   // @default-end
-  // @afterloop-begin
-  // @use-markdown
-  ${{
-    var codes = Object.keys(sharedObj.byCode).sort(function (a, b) {
-      return a.toLowerCase().localeCompare(b.toLowerCase());
-    });
-    var out = [];
-    var countSources = function (ex) {
-      var s = new Set(ex.map(function (e) { return e.source.link; }));
-      return s.size;
-    };
-
-    out.push("**Sources processed:** " + sharedObj.sources + "  ");
-    out.push("**Sources with coded extracts:** " + sharedObj.codedSources + "  ");
-    out.push("**Distinct codes:** " + codes.length);
-    out.push("");
-
-    if (sharedObj.skipped.length) {
-      var skCodes = new Set();
-      for (var q = 0; q < sharedObj.skipped.length; q++) {
-        sharedObj.skipped[q].codes.forEach(function (c) { skCodes.add(c); });
-      }
-      out.push("> **" + sharedObj.skipped.length + " coded annotation(s) skipped.** They have neither highlighted text nor a memo, so there is nothing to quote. These are usually image or area annotations. Add a memo to the annotation if you want it to appear here. Codes affected: " + Array.from(skCodes).sort().join(", "));
-      out.push("");
-    }
-
-    if (!codes.length) {
-      out.push("> No tagged highlights were found in these sources. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
-      return out.join("\n");
-    }
-
-    out.push("## Codebook at a glance");
-    out.push("");
-    out.push("| Code | Extracts | Sources |");
-    out.push("| :-- | --: | --: |");
-    for (var i = 0; i < codes.length; i++) {
-      var ex = sharedObj.byCode[codes[i]];
-      out.push("| " + codes[i] + " | " + ex.length + " | " + countSources(ex) + " |");
-    }
-    out.push("");
-    out.push("## Extracts by code");
-    for (var k = 0; k < codes.length; k++) {
-      var list = sharedObj.byCode[codes[k]];
-      out.push("");
-      out.push("### " + codes[k]);
-      out.push("");
-      out.push("*" + list.length + " extract(s) across " + countSources(list) + " source(s)*");
-      for (var n = 0; n < list.length; n++) {
-        out.push("");
-        out.push(sharedObj.renderExtract(list[n], true));
-      }
-    }
-
-    if (sharedObj.uncoded.length) {
-      out.push("");
-      out.push("## Sources with no coded extracts");
-      out.push("");
-      for (var u = 0; u < sharedObj.uncoded.length; u++) {
-        var s = sharedObj.uncoded[u];
-        out.push("- [" + s.label + "](" + s.link + ") " + s.title);
-      }
-    }
-
-    return out.join("\n");
-  }}$
-  // @afterloop-end
