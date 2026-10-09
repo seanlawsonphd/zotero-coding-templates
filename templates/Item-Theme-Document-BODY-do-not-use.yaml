@@ -56,6 +56,14 @@ content: |-
           i++;
           continue;
         }
+        // A plus sign with a space on each side means AND, so a pair copied
+        // from a Code Matrix ("a + b") can be pasted in as is.
+        if (ch === "+" && (i === 0 || /\s/.test(text[i - 1])) && (i + 1 >= text.length || /\s/.test(text[i + 1]))) {
+          flush();
+          tokens.push({ t: "AND" });
+          i++;
+          continue;
+        }
         var m = text.slice(i).match(/^(AND|OR|NOT)(?![A-Za-z0-9_])/);
         if (m && (i === 0 || /[\s()]/.test(text[i - 1]))) {
           flush();
@@ -138,7 +146,7 @@ content: |-
     var parseCodesLine = function (text) {
       var raw = (text || "").replace(/\s+/g, " ").trim();
       var hasOps = function (s) {
-        return /(^|[\s(])(AND|OR|NOT)(?=[\s(]|$)/.test(s) || /[()]/.test(s);
+        return /(^|[\s(])(AND|OR|NOT)(?=[\s(]|$)/.test(s) || /[()]/.test(s) || /(^|\s)\+(\s|$)/.test(s);
       };
       var spec = { raw: raw, declared: [], mentioned: [], usesLogic: false, errors: [] };
       var tests = [];
@@ -204,7 +212,7 @@ content: |-
     } else if (!_env.dryRun) {
       codeInput = sharedObj.ask(
         "Theme Document",
-        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final. To combine codes, use AND, OR and NOT in capital letters, for example: fear appeal AND NOT humor",
+        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final. To combine codes, use AND, OR and NOT in capital letters, for example: fear appeal AND NOT humor. A plus sign also means AND, so you can paste a pair from a Code Matrix",
         ""
       );
     }
@@ -468,7 +476,7 @@ content: |-
     out.push("");
     out.push("*To reorder the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
-    out.push("*To combine codes, use AND, OR, and NOT in capital letters in that same line, with parentheses if needed, for example: fear appeal AND NOT humor. The expression is checked against the codes on each extract. Commas still mean \"or\".*");
+    out.push("*To combine codes, use AND, OR, and NOT in capital letters in that same line, with parentheses if needed, for example: fear appeal AND NOT humor. The expression is checked against the codes on each extract. Commas still mean \"or\". A plus sign between two codes also means AND, so a pair copied from a Code Matrix works as is.*");
     out.push("");
     if (spec.errors.length) {
       out.push("> **Part of the codes line was not understood and was ignored:** " + spec.errors.join("; ") + ". Write it like this: fear appeal AND NOT humor. Operators must be in capital letters.");

@@ -181,6 +181,7 @@ accept more than a plain list. Type an expression there (and refresh, if the not
 |---|---|
 | `fear appeal, threat` | carry either code (a comma means "or") |
 | `fear appeal AND threat` | carry both codes on the same highlight |
+| `fear appeal + threat` | the same as AND: a plus sign with a space on each side |
 | `fear appeal AND NOT humor` | are tagged fear appeal and are not also tagged humor |
 | `(fear appeal OR threat) AND NOT humor` | carry either of the first two and not humor |
 
@@ -189,6 +190,8 @@ accept more than a plain list. Type an expression there (and refresh, if the not
 - The expression is checked against the codes on **each extract** (each highlight), not the whole
   source.
 - Each extract appears once, with its own codes listed beneath it.
+- A pair copied from the **Pairs that co-occur** list in a Code Matrix, such as
+  `reject monopoly + rejecting restrictions`, can be pasted straight into the codes prompt.
 - The theme **name** is only a title. Put the expression in the codes line, not in the name.
 - If part of the line cannot be read, the note says so.
 - Put a code in double quotes if its name contains a capitalized operator word or parentheses.
