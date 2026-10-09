@@ -229,6 +229,109 @@ content: |-
     // On refresh, reuse the theme name and code list already recorded in the
     // note rather than prompting again. Editing that line in the note and
     // refreshing is how a student regroups codes into a different theme.
+    // ---------- filter ----------
+    // A Boolean filter over an extract's own codes. Operators are AND, OR and
+    // NOT in capital letters, with parentheses for grouping. Anything else is a
+    // code name; put a code in double quotes if it contains an operator word.
+    var parseFilter = function (text) {
+      var tokens = [];
+      var buf = "";
+      var flush = function () {
+        var name = buf.replace(/\s+/g, " ").trim();
+        if (name) tokens.push({ t: "code", v: name.toLowerCase(), raw: name });
+        buf = "";
+      };
+      var i = 0;
+      while (i < text.length) {
+        var ch = text[i];
+        if (ch === "\"" || ch === "“" || ch === "”") {
+          var end = i + 1;
+          while (end < text.length && !/["“”]/.test(text[end])) end++;
+          flush();
+          buf = text.slice(i + 1, end);
+          flush();
+          i = end + 1;
+          continue;
+        }
+        if (ch === "(" || ch === ")") {
+          flush();
+          tokens.push({ t: ch });
+          i++;
+          continue;
+        }
+        var m = text.slice(i).match(/^(AND|OR|NOT)(?![A-Za-z0-9_])/);
+        if (m && (i === 0 || /[\s()]/.test(text[i - 1]))) {
+          flush();
+          tokens.push({ t: m[1] });
+          i += m[1].length;
+          continue;
+        }
+        buf += ch;
+        i++;
+      }
+      flush();
+
+      var pos = 0;
+      var codes = [];
+      var peek = function () { return tokens[pos] ? tokens[pos].t : null; };
+      var parseAtom = function () {
+        var tk = tokens[pos];
+        if (!tk) throw new Error("it ends too early");
+        if (tk.t === "(") {
+          pos++;
+          var inner = parseOr();
+          if (peek() !== ")") throw new Error("a closing parenthesis is missing");
+          pos++;
+          return inner;
+        }
+        if (tk.t === "code") {
+          pos++;
+          codes.push(tk.raw);
+          var v = tk.v;
+          return function (set) { return set.has(v); };
+        }
+        throw new Error("there is an unexpected " + tk.t);
+      };
+      var parseNot = function () {
+        if (peek() === "NOT") {
+          pos++;
+          var negated = parseNot();
+          return function (set) { return !negated(set); };
+        }
+        return parseAtom();
+      };
+      var parseAnd = function () {
+        var left = parseNot();
+        while (peek() === "AND") {
+          pos++;
+          left = (function (a, b) {
+            return function (set) { return a(set) && b(set); };
+          })(left, parseNot());
+        }
+        return left;
+      };
+      var parseOr = function () {
+        var left = parseAnd();
+        while (peek() === "OR") {
+          pos++;
+          left = (function (a, b) {
+            return function (set) { return a(set) || b(set); };
+          })(left, parseAnd());
+        }
+        return left;
+      };
+      try {
+        var test = parseOr();
+        if (pos < tokens.length) {
+          throw new Error("there is an unexpected " + (tokens[pos].raw || tokens[pos].t));
+        }
+        return { test: test, codes: codes, error: "" };
+      } catch (e) {
+        return { test: null, codes: codes, error: e.message };
+      }
+    };
+    var filterText = "";
+
     var prior = null;
     try {
       if (targetNoteItem && typeof targetNoteItem.getNote === "function") {
@@ -241,6 +344,9 @@ content: |-
           .replace(/&quot;/g, "\"")
           .replace(/&#39;/g, "'");
         var mCodes = plain.match(/Codes in this theme:\s*([^\n]*)/);
+        var mFilter = plain.match(/Filter:\s*([^\n]*)/);
+        filterText = mFilter ? mFilter[1].replace(/\s+/g, " ").trim() : "";
+        if (filterText.indexOf("(none)") !== -1) filterText = "";
         var priorCodes = mCodes ? clean(mCodes[1]) : "";
         if (priorCodes && priorCodes.indexOf("(none yet)") === -1) {
           prior = { codes: priorCodes };
@@ -266,6 +372,8 @@ content: |-
       .map(function (s) { return s.trim(); })
       .filter(Boolean);
     var wanted = new Set(declared.map(function (c) { return c.toLowerCase(); }));
+    var filter = filterText ? parseFilter(filterText) : null;
+    var hidden = 0;
 
     // ---------- gather top-level items ----------
     var items = [];
@@ -316,10 +424,13 @@ content: |-
       }
       for (var x = 0; x < res.extracts.length; x++) {
         var ex = res.extracts[x];
+        var exSet = new Set(ex.codes.map(function (c0) { return c0.toLowerCase(); }));
+        var passes = !(filter && filter.test) || filter.test(exSet);
+        if (!passes && ex.codes.some(function (c0) { return wanted.has(c0.toLowerCase()); })) hidden += 1;
         for (var y = 0; y < ex.codes.length; y++) {
           var c = ex.codes[y];
           seenCodes.add(c);
-          if (!wanted.has(c.toLowerCase())) continue;
+          if (!passes || !wanted.has(c.toLowerCase())) continue;
           if (!byCode[c]) byCode[c] = [];
           byCode[c].push(ex);
           matchedSources.add(ex.source.link);
@@ -341,8 +452,12 @@ content: |-
         }
       });
     }
+    var seenLower = new Set(Array.from(seenCodes).map(function (c) { return c.toLowerCase(); }));
+    var filterObj = filter;
+    var filterShown = filterText;
+    var hiddenCount = hidden;
     var missing = declared.filter(function (c) {
-      return !found.has(c.toLowerCase());
+      return !seenLower.has(c.toLowerCase());
     });
     var seenList = Array.from(seenCodes).sort(function (a, b) {
       return a.toLowerCase().localeCompare(b.toLowerCase());
@@ -369,9 +484,25 @@ content: |-
       out.push("  - and " + (sourceList.length - shown.length) + " more");
     }
     out.push("- **Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
+    out.push("- **Filter:** " + (filterShown ? mdEscape(filterShown) : "*(none)*"));
+    if (filterObj && filterObj.test && hiddenCount) {
+      out.push("  - " + hiddenCount + " extract(s) with these codes were left out by the filter");
+    }
     out.push("");
     out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
+    out.push("*To show only some of the extracts, write a filter in the Filter line and refresh. Use AND, OR, and NOT in capital letters, with parentheses if needed, for example: fear appeal AND NOT humor. The filter is checked against the codes on each extract.*");
+    out.push("");
+    if (filterObj && filterObj.error) {
+      out.push("> **The filter was not understood, so it was ignored:** " + filterObj.error + ". Write it like this: fear appeal AND NOT humor. Operators must be in capital letters.");
+      out.push("");
+    } else if (filterObj) {
+      var unknown = filterObj.codes.filter(function (c) { return !seenLower.has(c.toLowerCase()); });
+      if (unknown.length) {
+        out.push("> **Check the filter:** these codes do not appear in what was scanned: " + unknown.join(", ") + ". Codes match on exact spelling.");
+        out.push("");
+      }
+    }
 
     if (skippedAll.length) {
       var skCodes = new Set();
@@ -385,7 +516,7 @@ content: |-
     }
 
     if (missing.length) {
-      out.push("> **Check these codes:** " + missing.join(", ") + ". No quotable extract matched them. Codes match on exact spelling, so look for a typo or different capitalization.");
+      out.push("> **Check these codes:** " + missing.join(", ") + ". They do not appear in what was scanned. Codes match on exact spelling, so look for a typo or different capitalization.");
       out.push(">");
       out.push("> Codes actually present in what was scanned: " + (seenList.length ? seenList.join(", ") : "none"));
       out.push("");
@@ -394,7 +525,7 @@ content: |-
     out.push("## Evidence");
     if (!codes.length) {
       out.push("");
-      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
+      out.push("> Nothing to show. Check the codes and the filter above. A Code Overview lists the exact spelling of the codes you have applied.");
     }
     for (var n2 = 0; n2 < codes.length; n2++) {
       var list = byCode[codes[n2]];
