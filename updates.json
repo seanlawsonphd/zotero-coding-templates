@@ -34,6 +34,17 @@
 							"strict_max_version": "10.*"
 						}
 					}
+				},
+				{
+					"version": "1.2.1",
+					"update_link": "https://github.com/seanlawsonphd/zotero-coding-templates/releases/download/v1.2.1/coding-templates-1.2.1.xpi",
+					"update_hash": "sha256:425fb216c598df8a46eb97f8f5c8d1af020259a6e0c65522acef90ead46ce67f",
+					"applications": {
+						"zotero": {
+							"strict_min_version": "7.0",
+							"strict_max_version": "10.*"
+						}
+					}
 				}
 			]
 		}

@@ -25,7 +25,10 @@ rebuild them by hand.
 Each note comes in two versions. In the template list, pick the one that fits what you want to scan:
 
 - **`[Text] … (Collection)`** scans the collection highlighted in the left pane. Recommended.
-- **`[Item] …`** scans the items you have selected in the middle pane.
+- **`[Item] … (Selected items)`** scans the items you have selected in the middle pane.
+
+The colored **Item** and **Text** labels in the list come from Better Notes and can be ignored.
+Go by the name: it ends in **(Collection)** or **(Selected items)**.
 
 Every template also has a helper named **Helper for … (do not use)**. The helpers do the real
 work and are called by name, so they must be installed, but you never run them yourself. They sit
@@ -137,7 +140,7 @@ If no collection is highlighted, the template asks you to type a collection name
 your whole library.
 
 **Selected items instead of a collection:** select the items in the middle pane, then use
-**[Item] Code Overview**. When Zotero asks for the data source, choose **Use selected items in
+**[Item] Code Overview (Selected items)**. When Zotero asks for the data source, choose **Use selected items in
 library**. This version shows Scope and the codebook table only.
 
 ## Step 3: See which codes co-occur
@@ -145,7 +148,7 @@ library**. This version shows Scope and the codebook table only.
 Use this to find codes that travel together, which often points to a theme, or to two codes that
 are really one.
 
-1. Click the collection in the left pane (or select items and use the **[Item]** version).
+1. Click the collection in the left pane (or select items and use the **(Selected items)** version).
 2. **New Note → New Standalone Note from Template → [Text] Code Matrix (Collection)**.
 3. Type a title and click **OK**.
 
@@ -166,7 +169,7 @@ not count as co-occurring.
 
 Use this to read everything you coded with a single code, side by side.
 
-1. Click the collection in the left pane (or select items and use the **[Item]** version).
+1. Click the collection in the left pane (or select items and use the **(Selected items)** version).
 2. **New Note → New Standalone Note from Template → [Text] Code Report (Collection)**.
 3. Type the **code**, spelled exactly as you tagged it. The note is named "Code Report: " followed
    by the code.

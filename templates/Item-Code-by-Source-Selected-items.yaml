@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Item] Code by Source"
+name: "[Item] Code by Source (Selected items)"
 content: |-
   // @beforeloop-begin
   ${{

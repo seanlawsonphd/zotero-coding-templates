@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Item] Uncoded Highlights"
+name: "[Item] Codebook (Selected items)"
 content: |-
   // @beforeloop-begin
   ${{
@@ -9,23 +9,23 @@ content: |-
     // line, which becomes the note name. The refreshable part comes from the
     // BODY template.
     var body = await Zotero.BetterNotes.api.template.runItemTemplate(
-      "[item] Helper for Uncoded Highlights (do not use)",
+      "[item] Helper for Codebook (do not use)",
       {
         itemIds: items.map(function (item) { return item.id; }),
         targetNoteId: targetNoteItem ? targetNoteItem.id : undefined,
         dryRun: _env.dryRun
       }
     );
-    var title = "Uncoded Highlights";
+    var title = "Codebook";
     if (!_env.dryRun) {
       var question = "Title for this note. This becomes the note name in your Zotero list.";
       try {
-        var box = { value: "Uncoded Highlights" };
-        var ok = Services.prompt.prompt(null, "Uncoded Highlights", question, box, null, {});
+        var box = { value: "Codebook" };
+        var ok = Services.prompt.prompt(null, "Codebook", question, box, null, {});
         if (ok && box.value.trim()) title = box.value.trim();
       } catch (e) {
         try {
-          var typed = Zotero.getMainWindow().prompt(question, "Uncoded Highlights");
+          var typed = Zotero.getMainWindow().prompt(question, "Codebook");
           if (typed && typed.trim()) title = typed.trim();
         } catch (e2) {
           // keep the default
@@ -33,7 +33,13 @@ content: |-
       }
     }
     title = title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    var defs = "";
+    var defs = "\n<h2>Code definitions</h2>";
+    var listed = Zotero.CodingTemplatesCodebook || [];
+    delete Zotero.CodingTemplatesCodebook;
+    listed.forEach(function (c) {
+      var safe = c.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      defs += "\n<h3>" + safe + "</h3>\n<p><strong>Definition:</strong> </p>\n<p><strong>Use it when:</strong> </p>\n<p><strong>Do not use it when:</strong> </p>";
+    });
     return "<h1>" + title + "</h1>\n" + body + defs;
   }}$
   // @beforeloop-end

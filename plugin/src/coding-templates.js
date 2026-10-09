@@ -18,6 +18,16 @@ CodingTemplates = {
 		'[Text] Code Co-occurrence BODY (do not use)',
 		'[Item] Code Co-occurrence',
 		'[Item] Code Co-occurrence BODY (do not use)',
+		// The selected-items templates gained "(Selected items)" in 1.2.1
+		'[Item] Code Matrix',
+		'[Item] Code Overview',
+		'[Item] Code Report',
+		'[Item] Code by Source',
+		'[Item] Codebook',
+		'[Item] Memo Report',
+		'[Item] Theme Document',
+		'[Item] Theme Map',
+		'[Item] Uncoded Highlights',
 		// Helpers were renamed in 1.2.0 so they sort to the bottom of the template list
 		'[Item] Code Matrix BODY (do not use)',
 		'[Item] Code Overview BODY (do not use)',
