@@ -9,7 +9,7 @@ content: |-
     // line, which becomes the note name. The refreshable part comes from the
     // BODY template.
     var body = await Zotero.BetterNotes.api.template.runItemTemplate(
-      "[Item] Uncoded Highlights BODY (do not use)",
+      "[item] Helper for Uncoded Highlights (do not use)",
       {
         itemIds: items.map(function (item) { return item.id; }),
         targetNoteId: targetNoteItem ? targetNoteItem.id : undefined,

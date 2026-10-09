@@ -29,7 +29,7 @@ content: |-
     }
     var esc = name.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     var body = await Zotero.BetterNotes.api.template.runItemTemplate(
-      "[Item] Theme Document BODY (do not use)",
+      "[item] Helper for Theme Document (do not use)",
       {
         itemIds: items.map(function (item) { return item.id; }),
         targetNoteId: targetNoteItem ? targetNoteItem.id : undefined,

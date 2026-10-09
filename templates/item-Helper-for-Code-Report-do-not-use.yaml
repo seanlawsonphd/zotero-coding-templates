@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Item] Code by Source BODY (do not use)"
+name: "[item] Helper for Code Report (do not use)"
 content: |-
   // @use-refresh
   // @beforeloop-begin
@@ -96,7 +96,6 @@ content: |-
       var attIDs = item.isAttachment() ? [item.id] : item.getAttachments();
       var out = [];
       var skipped = [];
-      var untagged = [];
       for (var i = 0; i < attIDs.length; i++) {
         var att = Zotero.Items.get(attIDs[i]);
         if (!att) {
@@ -121,25 +120,7 @@ content: |-
             .getTags()
             .map(function (t) { return t.tag; })
             .filter(function (t) { return t && t.indexOf("zotero://") !== 0; });
-          var link =
-            "zotero://open/" + scope(item) + "/items/" +
-            att.key + "?annotation=" + ann.key;
-          var who = "";
-          try {
-            who = ann.annotationAuthorName || "";
-            if (!who && ann.createdByUserID) who = Zotero.Users.getName(ann.createdByUserID) || "";
-          } catch (e) {
-            who = "";
-          }
-          if (!codes.length) {
-            if (text || memo) {
-              untagged.push({
-                text: text, memo: memo, codes: [], source: source,
-                page: ann.annotationPageLabel || "", link: link, author: who, att: att.key
-              });
-            }
-            continue;
-          }
+          if (!codes.length) continue;
           // Coded, but nothing to quote. Usually an image or area annotation.
           // Record it so the report can say so instead of dropping it silently.
           if (!text && !memo) {
@@ -152,13 +133,13 @@ content: |-
             codes: codes,
             source: source,
             page: ann.annotationPageLabel || "",
-            link: link,
-            author: who,
-            att: att.key
+            link:
+              "zotero://open/" + scope(item) + "/items/" +
+              att.key + "?annotation=" + ann.key
           });
         }
       }
-      return { source: source, extracts: out, skipped: skipped, untagged: untagged };
+      return { source: source, extracts: out, skipped: skipped };
     };
 
     var renderExtract = function (e, showCodes) {
@@ -198,10 +179,38 @@ content: |-
     };
 
     // The sources are the items this template was run on (kept in the block
-    // header, so a refresh scans the same items). Selected notes are set aside.
-    var noteItems = items.filter(function (it) { return it.isNote && it.isNote(); });
-    var scanItems = items.filter(function (it) { return !(it.isNote && it.isNote()); });
+    // header, so a refresh scans the same items).
 
+    // ---------- which code ----------
+    // On refresh, reuse the code already recorded in the note. Editing that
+    // line and refreshing is how to switch the report to another code.
+    var code = "";
+    try {
+      if (targetNoteItem && typeof targetNoteItem.getNote === "function") {
+        var plain = (targetNoteItem.getNote() || "")
+          .replace(/<[^>]+>/g, "\n")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, "\"")
+          .replace(/&#39;/g, "'");
+        var mCode = plain.match(/Code:\s*([^\n]*)/);
+        code = mCode ? clean(mCode[1]) : "";
+        if (code.indexOf("(none yet)") !== -1) code = "";
+      }
+    } catch (e) {
+      code = "";
+    }
+    if (!code && !_env.dryRun) {
+      code = clean(
+        ask(
+          "Code Report",
+          "Which code do you want a report on? Type it exactly as you tagged it. You can change it in the note afterwards and refresh.",
+          ""
+        )
+      );
+    }
 
     // ---------- harvest ----------
     var byCode = {};
@@ -209,13 +218,9 @@ content: |-
     var skippedAll = [];
     var codedSources = 0;
     var sourceList = [];
-    var allEx = [];
-    var untaggedAll = [];
-    for (var n = 0; n < scanItems.length; n++) {
-      var res = await harvest(scanItems[n]);
+    for (var n = 0; n < items.length; n++) {
+      var res = await harvest(items[n]);
       sourceList.push(res.source);
-      res.untagged.forEach(function (u) { untaggedAll.push(u); });
-      res.extracts.forEach(function (e0) { allEx.push(e0); });
       for (var s = 0; s < res.skipped.length; s++) skippedAll.push(res.skipped[s]);
       if (!res.extracts.length) {
         uncoded.push(res.source);
@@ -233,29 +238,38 @@ content: |-
     }
 
     // ---------- render ----------
-    var ci = function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); };
-    var codes = Object.keys(byCode).sort(ci);
+    var codes = Object.keys(byCode).sort(function (a, b) {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
     var countSources = function (list) {
       var s = new Set(list.map(function (e) { return e.source.link; }));
       return s.size;
     };
-    var cell = function (text) { return String(text).replace(/\|/g, "\\|"); };
-    var shorten = function (text, max) {
-      text = String(text || "");
-      return text.length > max ? text.slice(0, max - 1).trim() + "\u2026" : text;
-    };
-    var cite = function (e) {
-      var line = "> **Source:** " + mdEscape(e.source.cite);
-      if (e.page) line += " (p. " + e.page + ")";
-      return line + " [\\[Open highlight\\]](" + e.link + ")";
-    };
-    var scannedLabel = scanItems.length + " selected item(s)";
+    var scannedLabel = items.length + " selected item(s)";
     var out = [];
+    var wantCode = code.toLowerCase();
+    var list = [];
+    var seenLinks = new Set();
+    codes.forEach(function (key) {
+      if (key.toLowerCase() !== wantCode) return;
+      byCode[key].forEach(function (e) {
+        if (seenLinks.has(e.link)) return;
+        seenLinks.add(e.link);
+        list.push(e);
+      });
+    });
+    var skippedHere = skippedAll.filter(function (sk) {
+      return sk.codes.some(function (c) { return c.toLowerCase() === wantCode; });
+    });
+
     out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
     out.push("## Scope");
     out.push("");
-    out.push("- **" + "Built from " + codes.length + " code(s), " + allEx.length + " extract(s), " + codedSources + " source(s), out of " + scanItems.length + " sources scanned." + "**");
+    out.push(
+      "- **Built from " + list.length + " extract(s) in " + countSources(list) +
+      " source(s), out of " + items.length + " sources scanned.**"
+    );
     out.push("- **Scanned:** " + scannedLabel);
     var shown = sourceList.slice(0, 50);
     for (var s2 = 0; s2 < shown.length; s2++) {
@@ -264,63 +278,38 @@ content: |-
     if (sourceList.length > shown.length) {
       out.push("  - and " + (sourceList.length - shown.length) + " more");
     }
-    out.push("- **Generated:** " + new Date().toLocaleString());
+    out.push("- **Code:** " + (code ? code : "*(none yet)*"));
+    out.push("");
+    out.push("*To report on a different code, change the code in the line above, then refresh this note (More Options, then Update content from templates).*");
     out.push("");
 
-    var outlets = [];
-    var byOutlet = {};
-    var bySrc = {};
-    var srcOrder = [];
-    allEx.forEach(function (e) {
-      var o = e.source.outlet || "(no publication)";
-      if (!byOutlet[o]) { byOutlet[o] = { total: 0, counts: {} }; outlets.push(o); }
-      if (!bySrc[e.source.link]) { bySrc[e.source.link] = { source: e.source, total: 0, counts: {} }; srcOrder.push(e.source.link); }
-      byOutlet[o].total += 1;
-      bySrc[e.source.link].total += 1;
-      e.codes.forEach(function (c) {
-        byOutlet[o].counts[c] = (byOutlet[o].counts[c] || 0) + 1;
-        bySrc[e.source.link].counts[c] = (bySrc[e.source.link].counts[c] || 0) + 1;
-      });
-    });
-    outlets.sort(ci);
-
-    out.push("## Codes by publication");
-    out.push("");
-    if (!codes.length) {
-      out.push("> No tagged highlights were found. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
-    } else {
-      out.push("*Each cell counts the extracts with that code in sources from that publication. The last row is the number of coded extracts from each publication.*");
+    if (skippedHere.length) {
+      out.push("> **" + skippedHere.length + " annotation(s) with this code were skipped.** They have neither highlighted text nor a memo, so there is nothing to quote. These are usually image or area annotations. Add a memo to the annotation if you want it to appear here.");
       out.push("");
-      out.push("| Code | " + outlets.map(cell).join(" | ") + " | All |");
-      out.push("| :-- |" + outlets.map(function () { return " :-: |"; }).join("") + " :-: |");
-      codes.forEach(function (c) {
-        var row = "| **" + cell(c) + "** |";
-        outlets.forEach(function (o) { row += " " + (byOutlet[o].counts[c] || 0) + " |"; });
-        out.push(row + " " + byCode[c].length + " |");
-      });
-      var totals = "| *Coded extracts* |";
-      outlets.forEach(function (o) { totals += " " + byOutlet[o].total + " |"; });
-      out.push(totals + " " + allEx.length + " |");
-      out.push("");
-      out.push("## Codes by source");
-      out.push("");
-      out.push("*One row for each source that has coded extracts. Each cell counts the extracts with that code in that source.*");
-      out.push("");
-      out.push("| Source | " + codes.map(cell).join(" | ") + " | Coded extracts |");
-      out.push("| :-- |" + codes.map(function () { return " :-: |"; }).join("") + " :-: |");
-      srcOrder.forEach(function (link) {
-        var s = bySrc[link];
-        var name = cell(mdEscape(shorten(s.source.title, 60)));
-        if (s.source.outlet) name += " (" + cell(mdEscape(s.source.outlet)) + ")";
-        var row = "| [" + name + "](" + s.source.link + ") |";
-        codes.forEach(function (c) { row += " " + (s.counts[c] || 0) + " |"; });
-        out.push(row + " " + s.total + " |");
-      });
     }
+
+    if (!list.length) {
+      out.push("> **Check this code.** No quotable extract is tagged " + (code ? "**" + code + "**" : "with a code yet") + ". Codes match on exact spelling, so look for a typo.");
+      out.push(">");
+      out.push("> Codes actually present in what was scanned: " + (codes.length ? codes.join(", ") : "none"));
+      out.push("");
+    }
+
+    out.push("## Evidence");
+    if (list.length) {
+      out.push("");
+      out.push("*" + list.length + " extract(s) across " + countSources(list) + " source(s)*");
+    }
+    for (var p2 = 0; p2 < list.length; p2++) {
+      out.push("");
+      out.push(renderExtract(list[p2], true));
+    }
+
     out.push("");
     out.push("## Analytical Notes");
     out.push("");
-    out.push("*Write your thoughts about these patterns after the line below. For example, note which codes are concentrated in one publication or source, which appear everywhere, and what that might tell you.*");
+    out.push("*Write your thoughts about this code after the line below. For example, note what these extracts have in common, how you would define the code, and any other observations or insights that will be helpful when writing up your final report.*");
+
     return out.join("\n");
   }}$
   // @beforeloop-end

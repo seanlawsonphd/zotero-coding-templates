@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Text] Code Overview BODY (do not use)"
+name: "[text] Helper for Memo Report (do not use)"
 content: |-
   // @use-refresh
   // @use-markdown
@@ -95,6 +95,7 @@ content: |-
       var attIDs = item.isAttachment() ? [item.id] : item.getAttachments();
       var out = [];
       var skipped = [];
+      var untagged = [];
       for (var i = 0; i < attIDs.length; i++) {
         var att = Zotero.Items.get(attIDs[i]);
         if (!att) {
@@ -119,7 +120,25 @@ content: |-
             .getTags()
             .map(function (t) { return t.tag; })
             .filter(function (t) { return t && t.indexOf("zotero://") !== 0; });
-          if (!codes.length) continue;
+          var link =
+            "zotero://open/" + scope(item) + "/items/" +
+            att.key + "?annotation=" + ann.key;
+          var who = "";
+          try {
+            who = ann.annotationAuthorName || "";
+            if (!who && ann.createdByUserID) who = Zotero.Users.getName(ann.createdByUserID) || "";
+          } catch (e) {
+            who = "";
+          }
+          if (!codes.length) {
+            if (text || memo) {
+              untagged.push({
+                text: text, memo: memo, codes: [], source: source,
+                page: ann.annotationPageLabel || "", link: link, author: who, att: att.key
+              });
+            }
+            continue;
+          }
           // Coded, but nothing to quote. Usually an image or area annotation.
           // Record it so the report can say so instead of dropping it silently.
           if (!text && !memo) {
@@ -132,13 +151,13 @@ content: |-
             codes: codes,
             source: source,
             page: ann.annotationPageLabel || "",
-            link:
-              "zotero://open/" + scope(item) + "/items/" +
-              att.key + "?annotation=" + ann.key
+            link: link,
+            author: who,
+            att: att.key
           });
         }
       }
-      return { source: source, extracts: out, skipped: skipped };
+      return { source: source, extracts: out, skipped: skipped, untagged: untagged };
     };
 
     var renderExtract = function (e, showCodes) {
@@ -207,7 +226,7 @@ content: |-
     if (!coll && !_env.dryRun) {
       var typed = clean(
         ask(
-          "Code Overview",
+          "Memo Report",
           "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
           ""
         )
@@ -227,10 +246,14 @@ content: |-
 
     // ---------- gather top-level items ----------
     var items = [];
+    var noteItems = [];
     var seenIDs = new Set();
     var keep = function (it) {
       if (!it || seenIDs.has(it.id)) return;
-      if (it.isNote && it.isNote()) return;
+      if (it.isNote && it.isNote()) {
+        if (!it.parentItemID && noteItems.indexOf(it) === -1) noteItems.push(it);
+        return;
+      }
       if (it.isAnnotation && it.isAnnotation()) return;
       if (it.isAttachment && it.isAttachment() && it.parentItemID) return;
       seenIDs.add(it.id);
@@ -254,15 +277,21 @@ content: |-
       walk(coll);
     }
 
+    var scanItems = items;
+
     // ---------- harvest ----------
     var byCode = {};
     var uncoded = [];
     var skippedAll = [];
     var codedSources = 0;
     var sourceList = [];
-    for (var n = 0; n < items.length; n++) {
-      var res = await harvest(items[n]);
+    var allEx = [];
+    var untaggedAll = [];
+    for (var n = 0; n < scanItems.length; n++) {
+      var res = await harvest(scanItems[n]);
       sourceList.push(res.source);
+      res.untagged.forEach(function (u) { untaggedAll.push(u); });
+      res.extracts.forEach(function (e0) { allEx.push(e0); });
       for (var s = 0; s < res.skipped.length; s++) skippedAll.push(res.skipped[s]);
       if (!res.extracts.length) {
         uncoded.push(res.source);
@@ -280,62 +309,56 @@ content: |-
     }
 
     // ---------- render ----------
-    var codes = Object.keys(byCode).sort(function (a, b) {
-      return a.toLowerCase().localeCompare(b.toLowerCase());
-    });
+    var ci = function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); };
+    var codes = Object.keys(byCode).sort(ci);
     var countSources = function (list) {
       var s = new Set(list.map(function (e) { return e.source.link; }));
       return s.size;
     };
-    var scannedLabel = (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))";
+    var cell = function (text) { return String(text).replace(/\|/g, "\\|"); };
+    var shorten = function (text, max) {
+      text = String(text || "");
+      return text.length > max ? text.slice(0, max - 1).trim() + "\u2026" : text;
+    };
+    var cite = function (e) {
+      var line = "> **Source:** " + mdEscape(e.source.cite);
+      if (e.page) line += " (p. " + e.page + ")";
+      return line + " [\\[Open highlight\\]](" + e.link + ")";
+    };
+    var scannedLabel = (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + scanItems.length + " source(s))";
     var out = [];
-    var allExtracts = new Set();
-    for (var t2 = 0; t2 < codes.length; t2++) {
-      byCode[codes[t2]].forEach(function (e) { allExtracts.add(e.link); });
-    }
-    out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line at the bottom is regenerated every time you refresh this note.</strong> Do not type inside it. Write any notes of your own below that line, or a refresh will erase them.</em></span>");
+    var memos = allEx.concat(untaggedAll).filter(function (e) { return e.memo; });
+    var srcIndex = {};
+    sourceList.forEach(function (s, i) { srcIndex[s.link] = i; });
+    memos.sort(function (a, b) { return srcIndex[a.source.link] - srcIndex[b.source.link]; });
+    var uncodedMemos = memos.filter(function (e) { return !e.codes.length; }).length;
+    out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
     out.push("## Scope");
     out.push("");
-    out.push(
-      "- **Built from " + codes.length + " code(s), " + allExtracts.size + " extract(s), " +
-      codedSources + " source(s), out of " + items.length + " sources scanned.**"
-    );
+    out.push("- **" + "Built from " + memos.length + " memo(s) in " + countSources(memos) + " source(s), out of " + scanItems.length + " sources scanned." + "**");
+    out.push("- **Memos on highlights with no code yet:** " + uncodedMemos);
     out.push("- **Scanned:** " + scannedLabel);
     out.push("- **Generated:** " + new Date().toLocaleString());
     out.push("");
-
-    if (skippedAll.length) {
-      var skCodes = new Set();
-      for (var q = 0; q < skippedAll.length; q++) {
-        skippedAll[q].codes.forEach(function (c) { skCodes.add(c); });
-      }
-      out.push("> **" + skippedAll.length + " coded annotation(s) not counted.** They have neither highlighted text nor a memo. These are usually image or area annotations. Add a memo to the annotation if you want it counted. Codes affected: " + Array.from(skCodes).sort().join(", "));
+    out.push("## Memos");
+    if (!memos.length) {
       out.push("");
+      out.push("> No memos were found. A memo is a comment written on a highlight in the Zotero reader.");
     }
-
-    out.push("## Codebook at a glance");
+    memos.forEach(function (e) {
+      out.push("");
+      out.push("> **Memo:** " + e.memo);
+      out.push("> ");
+      out.push("> *Passage:* " + (e.text ? e.text : "*(no highlighted text)*"));
+      out.push("> ");
+      out.push(cite(e));
+      out.push("> ");
+      out.push("> **Codes:** " + (e.codes.length ? e.codes.join(", ") : "*none yet*"));
+    });
     out.push("");
-    if (!codes.length) {
-      out.push("> No tagged highlights were found. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
-    } else {
-      out.push("| Code | Extracts | Sources |");
-      out.push("| :-- | --: | --: |");
-      for (var i2 = 0; i2 < codes.length; i2++) {
-        var l1 = byCode[codes[i2]];
-        out.push("| " + codes[i2] + " | " + l1.length + " | " + countSources(l1) + " |");
-      }
-    }
-
+    out.push("## Analytical Notes");
     out.push("");
-    out.push("## Sources with no coded extracts");
-    out.push("");
-    if (!uncoded.length) {
-      out.push("*Every source scanned has at least one coded extract.*");
-    }
-    for (var u = 0; u < uncoded.length; u++) {
-      out.push("- " + mdEscape(uncoded[u].cite));
-    }
-
+    out.push("*Write your thoughts about these memos after the line below. For example, note ideas that come up more than once, memos that suggest a new code, and questions to follow up.*");
     return out.join("\n");
   }}$

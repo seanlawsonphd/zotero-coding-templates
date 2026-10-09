@@ -29,7 +29,7 @@ content: |-
     return "# Theme: " + name;
   }}$
 
-  ${await Zotero.BetterNotes.api.template.runTextTemplate("[Text] Theme Document BODY (do not use)", { targetNoteId: targetNoteItem ? targetNoteItem.id : undefined, dryRun: _env.dryRun })}
+  ${await Zotero.BetterNotes.api.template.runTextTemplate("[text] Helper for Theme Document (do not use)", { targetNoteId: targetNoteItem ? targetNoteItem.id : undefined, dryRun: _env.dryRun })}
 
   <h3>Theme Definition</h3>
   <p></p>

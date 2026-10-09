@@ -27,9 +27,10 @@ Each note comes in two versions. In the template list, pick the one that fits wh
 - **`[Text] … (Collection)`** scans the collection highlighted in the left pane. Recommended.
 - **`[Item] …`** scans the items you have selected in the middle pane.
 
-Every template also has a helper whose name ends in **BODY (do not use)**. The helpers do the real
-work and are called by name, so they must be installed, but you never run them yourself. With
-nine reports, two versions each, a helper for each, and the Analytic Memo, the `templates` folder
+Every template also has a helper named **Helper for … (do not use)**. The helpers do the real
+work and are called by name, so they must be installed, but you never run them yourself. They sit
+together at the bottom of the template list. With nine reports, two versions each, a helper for
+each, and the Analytic Memo, the `templates` folder
 holds **37 files**. The installer plugin adds them all at once.
 
 ## Before you start
@@ -318,7 +319,7 @@ holds the library, so the quotations and citations in the exported file are what
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
 | A template is not listed in the picker | Choose **Tools → Reinstall Coding Templates**. If that menu entry is missing, the Coding Templates plugin is not installed (see "Install") |
 | "Better Notes was not found" | Install the Better Notes plugin, then restart Zotero |
-| A note made before the templates were updated will not refresh properly | The templates were restructured. Make a new note from the template |
+| A note made with an older version of the templates will not refresh | The helpers were renamed in version 1.2.0. Make a new note from the template and copy your own writing across |
 | A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
 | The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
 | "Preview mode does not scan the library" | You are in the Template Editor's preview. Run the template from **New Standalone Note from Template** instead |
@@ -342,8 +343,8 @@ Group libraries work the same way; the links inside the notes point into the gro
   version, run `python3 scripts/export-templates.py` on the computer where it was edited; it
   rewrites `templates/*.yaml` from the live preferences. Commit and push the result.
 - The Collection templates call their helpers by exact name
-  (`Zotero.BetterNotes.api.template.runTextTemplate("[Text] Code Report BODY (do not use)")`).
-  Renaming a BODY template breaks the matching Collection template.
+  (`Zotero.BetterNotes.api.template.runTextTemplate("[text] Helper for Code Report (do not use)")`).
+  Renaming a helper breaks the template that calls it. Helper names start with a lowercase `[text]` or `[item]` on purpose: Better Notes sorts the list by name, and lowercase sorts after the capitalized `[Text]` and `[Item]`, which keeps the helpers at the bottom.
 - The `// @use-refresh` pragma is what makes **Update content from templates** work; the Collection
   versions deliberately keep the `# Title` line outside the refreshable block so the note keeps its
   name.

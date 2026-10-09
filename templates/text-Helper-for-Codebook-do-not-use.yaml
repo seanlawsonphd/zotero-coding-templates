@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Text] Theme Map BODY (do not use)"
+name: "[text] Helper for Codebook (do not use)"
 content: |-
   // @use-refresh
   // @use-markdown
@@ -196,162 +196,6 @@ content: |-
       return null;
     };
 
-    // ---------- combining codes ----------
-    // A Boolean expression over an extract's own codes. Operators are AND, OR and
-    // NOT in capital letters, with parentheses for grouping. Anything else is a
-    // code name; put a code in double quotes if it contains an operator word.
-    var parseFilter = function (text) {
-      var tokens = [];
-      var buf = "";
-      var flush = function () {
-        var name = buf.replace(/\s+/g, " ").trim();
-        if (name) tokens.push({ t: "code", v: name.toLowerCase(), raw: name });
-        buf = "";
-      };
-      var i = 0;
-      while (i < text.length) {
-        var ch = text[i];
-        if (ch === "\"" || ch === "“" || ch === "”") {
-          var end = i + 1;
-          while (end < text.length && !/["“”]/.test(text[end])) end++;
-          flush();
-          buf = text.slice(i + 1, end);
-          flush();
-          i = end + 1;
-          continue;
-        }
-        if (ch === "(" || ch === ")") {
-          flush();
-          tokens.push({ t: ch });
-          i++;
-          continue;
-        }
-        // A plus sign with a space on each side means AND, so a pair copied
-        // from a Code Matrix ("a + b") can be pasted in as is.
-        if (ch === "+" && (i === 0 || /\s/.test(text[i - 1])) && (i + 1 >= text.length || /\s/.test(text[i + 1]))) {
-          flush();
-          tokens.push({ t: "AND" });
-          i++;
-          continue;
-        }
-        var m = text.slice(i).match(/^(AND|OR|NOT)(?![A-Za-z0-9_])/);
-        if (m && (i === 0 || /[\s()]/.test(text[i - 1]))) {
-          flush();
-          tokens.push({ t: m[1] });
-          i += m[1].length;
-          continue;
-        }
-        buf += ch;
-        i++;
-      }
-      flush();
-
-      var pos = 0;
-      var codes = [];
-      var positive = [];
-      var negDepth = 0;
-      var peek = function () { return tokens[pos] ? tokens[pos].t : null; };
-      var parseAtom = function () {
-        var tk = tokens[pos];
-        if (!tk) throw new Error("it ends too early");
-        if (tk.t === "(") {
-          pos++;
-          var inner = parseOr();
-          if (peek() !== ")") throw new Error("a closing parenthesis is missing");
-          pos++;
-          return inner;
-        }
-        if (tk.t === "code") {
-          pos++;
-          codes.push(tk.raw);
-          if (negDepth % 2 === 0) positive.push(tk.raw);
-          var v = tk.v;
-          return function (set) { return set.has(v); };
-        }
-        throw new Error("there is an unexpected " + tk.t);
-      };
-      var parseNot = function () {
-        if (peek() === "NOT") {
-          pos++;
-          negDepth++;
-          var negated = parseNot();
-          negDepth--;
-          return function (set) { return !negated(set); };
-        }
-        return parseAtom();
-      };
-      var parseAnd = function () {
-        var left = parseNot();
-        while (peek() === "AND") {
-          pos++;
-          left = (function (a, b) {
-            return function (set) { return a(set) && b(set); };
-          })(left, parseNot());
-        }
-        return left;
-      };
-      var parseOr = function () {
-        var left = parseAnd();
-        while (peek() === "OR") {
-          pos++;
-          left = (function (a, b) {
-            return function (set) { return a(set) || b(set); };
-          })(left, parseAnd());
-        }
-        return left;
-      };
-      try {
-        var test = parseOr();
-        if (pos < tokens.length) {
-          throw new Error("there is an unexpected " + (tokens[pos].raw || tokens[pos].t));
-        }
-        return { test: test, codes: codes, positive: positive, error: "" };
-      } catch (e) {
-        return { test: null, codes: codes, positive: positive, error: e.message };
-      }
-    };
-
-    // Reads the "Codes in this theme" line. Commas separate alternatives; each
-    // alternative is a single code or an expression such as: a AND NOT b
-    var parseCodesLine = function (text) {
-      var raw = (text || "").replace(/\s+/g, " ").trim();
-      var hasOps = function (s) {
-        return /(^|[\s(])(AND|OR|NOT)(?=[\s(]|$)/.test(s) || /[()]/.test(s) || /(^|\s)\+(\s|$)/.test(s);
-      };
-      var spec = { raw: raw, declared: [], mentioned: [], usesLogic: false, errors: [] };
-      var tests = [];
-      var add = function (list, name) {
-        var low = name.toLowerCase();
-        if (!list.some(function (x) { return x.toLowerCase() === low; })) list.push(name);
-      };
-      raw.split(",").forEach(function (part) {
-        part = part.trim();
-        if (!part) return;
-        if (!hasOps(part)) {
-          var name = part.replace(/^["“]|["”]$/g, "").trim();
-          if (!name) return;
-          add(spec.declared, name);
-          add(spec.mentioned, name);
-          var low = name.toLowerCase();
-          tests.push(function (set) { return set.has(low); });
-          return;
-        }
-        spec.usesLogic = true;
-        var parsed = parseFilter(part);
-        if (parsed.error) {
-          spec.errors.push(part + " (" + parsed.error + ")");
-          return;
-        }
-        parsed.positive.forEach(function (c) { add(spec.declared, c); });
-        parsed.codes.forEach(function (c) { add(spec.mentioned, c); });
-        tests.push(parsed.test);
-      });
-      spec.test = function (set) {
-        return tests.some(function (f) { return f(set); });
-      };
-      return spec;
-    };
-
     // ---------- resolve the scope ----------
     var pane = null;
     try {
@@ -382,7 +226,7 @@ content: |-
     if (!coll && !_env.dryRun) {
       var typed = clean(
         ask(
-          "Theme Map",
+          "Codebook",
           "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
           ""
         )
@@ -483,94 +327,61 @@ content: |-
     };
     var scannedLabel = (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + scanItems.length + " source(s))";
     var out = [];
-    var lower = function (list) { return new Set(list.map(function (c) { return c.toLowerCase(); })); };
-    var themes = [];
-    noteItems.forEach(function (n) {
-      if (targetNoteItem && n.id === targetNoteItem.id) return;
-      var html = "";
-      try { html = n.getNote() || ""; } catch (e) { html = ""; }
-      var plain = html
-        .replace(/<[^>]+>/g, "\n")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, "\"")
-        .replace(/&#39;/g, "'");
-      var m = plain.match(/Codes in this theme:\s*([^\n]*)/);
-      if (!m) return;
-      var line = clean(m[1]);
-      if (line.indexOf("(none yet)") !== -1) line = "";
-      var title = "";
-      try { title = n.getNoteTitle() || ""; } catch (e) { title = ""; }
-      title = clean(title.replace(/^Theme:\s*/i, "")) || "Untitled theme";
-      var spec = parseCodesLine(line);
-      var matched = allEx.filter(function (e) { return spec.test(lower(e.codes)); });
-      themes.push({
-        title: title, line: line, spec: spec, matched: matched,
-        link: "zotero://select/" + scope(n) + "/items/" + n.key
-      });
-    });
-    themes.sort(function (a, b) { return ci(a.title, b.title); });
     out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
     out.push("## Scope");
     out.push("");
-    out.push("- **" + "Built from " + themes.length + " theme(s), " + codes.length + " code(s), and " + allEx.length + " extract(s), out of " + scanItems.length + " sources scanned." + "**");
+    out.push("- **" + "Built from " + codes.length + " code(s), " + allEx.length + " extract(s), " + codedSources + " source(s), out of " + scanItems.length + " sources scanned." + "**");
     out.push("- **Scanned:** " + scannedLabel);
     out.push("- **Generated:** " + new Date().toLocaleString());
     out.push("");
-    out.push("## Themes");
-    out.push("");
-    if (!themes.length) {
-      out.push("> No Theme Documents were found in this collection. Make a Theme Document first, then refresh this note.");
-    } else {
-      out.push("| Theme | Codes | Extracts | Sources |");
-      out.push("| :-- | :-- | :-: | :-: |");
-      themes.forEach(function (t) {
-        out.push("| [" + cell(mdEscape(t.title)) + "](" + t.link + ") | " + (t.line ? cell(t.line) : "*none yet*") + " | " + t.matched.length + " | " + countSources(t.matched) + " |");
-      });
+    // Definitions are written by hand below the line, one Heading 3 per code.
+    // Read those headings so the note can say which codes still need one.
+    var noteHtml = "";
+    try {
+      if (targetNoteItem && typeof targetNoteItem.getNote === "function") noteHtml = targetNoteItem.getNote() || "";
+    } catch (e) {
+      noteHtml = "";
     }
-
-    var themesFor = function (c) {
-      var low = c.toLowerCase();
-      return themes.filter(function (t) {
-        return t.spec.declared.some(function (d) { return d.toLowerCase() === low; });
-      }).map(function (t) { return t.title; });
-    };
-    if (codes.length) {
-      out.push("");
-      out.push("## Codes and their themes");
-      out.push("");
-      out.push("| Code | Extracts | Themes |");
-      out.push("| :-- | :-: | :-- |");
-      codes.forEach(function (c) {
-        var names = themesFor(c);
-        out.push("| **" + cell(c) + "** | " + byCode[c].length + " | " + (names.length ? cell(names.join("; ")) : "*none*") + " |");
-      });
-    }
-
-    var codeSet = lower(codes);
-    var orphan = codes.filter(function (c) { return !themesFor(c).length; });
-    var shared = codes.filter(function (c) { return themesFor(c).length > 1; });
-    var unknown = [];
-    themes.forEach(function (t) {
-      t.spec.mentioned.forEach(function (c) {
-        if (!codeSet.has(c.toLowerCase())) unknown.push(c + " (" + t.title + ")");
-      });
+    var hasDefs = /<h2[^>]*>\s*Code definitions/.test(noteHtml);
+    var headings = [];
+    noteHtml.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/g, function (m, inner) {
+      var name = clean(inner.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'"));
+      if (name) headings.push(name);
+      return m;
     });
-    var covered = new Set();
-    themes.forEach(function (t) { t.matched.forEach(function (e) { covered.add(e.link); }); });
+    var headingSet = new Set(headings.map(function (h) { return h.toLowerCase(); }));
+    var codeSet = new Set(codes.map(function (c) { return c.toLowerCase(); }));
+    if (hasDefs) {
+      var undefinedCodes = codes.filter(function (c) { return !headingSet.has(c.toLowerCase()); });
+      var orphans = headings.filter(function (h) { return !codeSet.has(h.toLowerCase()); });
+      if (undefinedCodes.length) {
+        out.push("> **These codes have no definition yet:** " + undefinedCodes.join(", ") + ". Under Code definitions below, add a line for each in the Heading 3 style, spelled exactly like the code, and write its definition underneath.");
+        out.push("");
+      }
+      if (orphans.length) {
+        out.push("> **These definitions no longer match a code in use:** " + orphans.join(", ") + ". The code may have been renamed, merged, or removed.");
+        out.push("");
+      }
+    }
+    Zotero.CodingTemplatesCodebook = codes.slice();
+
+    out.push("## Codes in use");
     out.push("");
-    out.push("## Check these");
-    out.push("");
-    out.push("- **Codes not in any theme:** " + (orphan.length ? orphan.join(", ") : "none"));
-    out.push("- **Codes in more than one theme:** " + (shared.length ? shared.map(function (c) { return c + " (" + themesFor(c).join("; ") + ")"; }).join(", ") : "none"));
-    out.push("- **Codes named in a theme but not found in the sources:** " + (unknown.length ? unknown.join(", ") : "none"));
-    out.push("- **Coded extracts not covered by any theme:** " + (allEx.length - covered.size) + " of " + allEx.length);
+    if (!codes.length) {
+      out.push("> No tagged highlights were found. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
+    } else {
+      out.push("| Code | Extracts | Sources | Example |");
+      out.push("| :-- | :-: | :-: | :-- |");
+      codes.forEach(function (c) {
+        var list = byCode[c];
+        var sample = list[0].text || list[0].memo || "";
+        out.push("| **" + cell(c) + "** | " + list.length + " | " + countSources(list) + " | " + cell(mdEscape(shorten(sample, 160))) + " |");
+      });
+    }
     out.push("");
     out.push("## Analytical Notes");
     out.push("");
-    out.push("*Write your thoughts about how the themes fit together after the line below. For example, note codes that belong in no theme, themes that overlap and might merge, and gaps the themes leave uncovered.*");
+    out.push("*Define each code after the line below. Every code has its own heading there. Say what the code means, when to use it, and when not to use it. After you add or rename codes, refresh this note and it will tell you which codes still need a definition.*");
     return out.join("\n");
   }}$

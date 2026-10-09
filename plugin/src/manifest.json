@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Coding Templates for Better Notes",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "Installs and updates a set of qualitative-coding note templates (code overviews, reports, matrices, memos, and theme documents) in Better Notes.",
 	"author": "Sean Lawson",
 	"homepage_url": "https://github.com/seanlawsonphd/zotero-coding-templates",

@@ -1,10 +1,9 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Item] Codebook BODY (do not use)"
+name: "[text] Helper for Code by Source (do not use)"
 content: |-
   // @use-refresh
-  // @beforeloop-begin
   // @use-markdown
   ${{
     var ask = function (title, msg, def) {
@@ -197,11 +196,88 @@ content: |-
       return null;
     };
 
-    // The sources are the items this template was run on (kept in the block
-    // header, so a refresh scans the same items). Selected notes are set aside.
-    var noteItems = items.filter(function (it) { return it.isNote && it.isNote(); });
-    var scanItems = items.filter(function (it) { return !(it.isNote && it.isNote()); });
+    // ---------- resolve the scope ----------
+    var pane = null;
+    try {
+      pane = Zotero.getActiveZoteroPane();
+    } catch (e) {
+      pane = null;
+    }
+    if (!pane) {
+      try {
+        pane = Zotero.getMainWindow().ZoteroPane;
+      } catch (e) {
+        pane = null;
+      }
+    }
 
+    var coll = null;
+    if (pane && typeof pane.getSelectedCollection === "function") {
+      try {
+        coll = pane.getSelectedCollection() || null;
+      } catch (e) {
+        coll = null;
+      }
+    }
+
+    var libraryID = coll ? coll.libraryID : Zotero.Libraries.userLibraryID;
+    var wholeLibrary = false;
+
+    if (!coll && !_env.dryRun) {
+      var typed = clean(
+        ask(
+          "Code by Source",
+          "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
+          ""
+        )
+      );
+      if (typed === "*") {
+        wholeLibrary = true;
+      } else if (typed) {
+        coll = findCollection(libraryID, typed);
+        if (!coll) {
+          return "> No collection named **" + typed +
+            "** was found. Check the spelling, or click the collection in the left pane before running this template.";
+        }
+      } else {
+        return "> Nothing to scan. Click a collection in the left pane and run this template again, or type a collection name at the prompt.";
+      }
+    }
+
+    // ---------- gather top-level items ----------
+    var items = [];
+    var noteItems = [];
+    var seenIDs = new Set();
+    var keep = function (it) {
+      if (!it || seenIDs.has(it.id)) return;
+      if (it.isNote && it.isNote()) {
+        if (!it.parentItemID && noteItems.indexOf(it) === -1) noteItems.push(it);
+        return;
+      }
+      if (it.isAnnotation && it.isAnnotation()) return;
+      if (it.isAttachment && it.isAttachment() && it.parentItemID) return;
+      seenIDs.add(it.id);
+      items.push(it);
+    };
+
+    var scopeName = "Entire library";
+    if (wholeLibrary) {
+      var all = await Zotero.Items.getAll(libraryID, true);
+      for (var a = 0; a < all.length; a++) keep(all[a]);
+    } else {
+      scopeName = coll.name;
+      var walk = function (c) {
+        var kids = [];
+        try { kids = c.getChildItems() || []; } catch (e) { kids = []; }
+        for (var i = 0; i < kids.length; i++) keep(kids[i]);
+        var subs = [];
+        try { subs = c.getChildCollections() || []; } catch (e) { subs = []; }
+        for (var j = 0; j < subs.length; j++) walk(subs[j]);
+      };
+      walk(coll);
+    }
+
+    var scanItems = items;
 
     // ---------- harvest ----------
     var byCode = {};
@@ -249,7 +325,7 @@ content: |-
       if (e.page) line += " (p. " + e.page + ")";
       return line + " [\\[Open highlight\\]](" + e.link + ")";
     };
-    var scannedLabel = scanItems.length + " selected item(s)";
+    var scannedLabel = (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + scanItems.length + " source(s))";
     var out = [];
     out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
@@ -257,65 +333,62 @@ content: |-
     out.push("");
     out.push("- **" + "Built from " + codes.length + " code(s), " + allEx.length + " extract(s), " + codedSources + " source(s), out of " + scanItems.length + " sources scanned." + "**");
     out.push("- **Scanned:** " + scannedLabel);
-    var shown = sourceList.slice(0, 50);
-    for (var s2 = 0; s2 < shown.length; s2++) {
-      out.push("  - " + mdEscape(shown[s2].cite));
-    }
-    if (sourceList.length > shown.length) {
-      out.push("  - and " + (sourceList.length - shown.length) + " more");
-    }
     out.push("- **Generated:** " + new Date().toLocaleString());
     out.push("");
-    // Definitions are written by hand below the line, one Heading 3 per code.
-    // Read those headings so the note can say which codes still need one.
-    var noteHtml = "";
-    try {
-      if (targetNoteItem && typeof targetNoteItem.getNote === "function") noteHtml = targetNoteItem.getNote() || "";
-    } catch (e) {
-      noteHtml = "";
-    }
-    var hasDefs = /<h2[^>]*>\s*Code definitions/.test(noteHtml);
-    var headings = [];
-    noteHtml.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/g, function (m, inner) {
-      var name = clean(inner.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'"));
-      if (name) headings.push(name);
-      return m;
-    });
-    var headingSet = new Set(headings.map(function (h) { return h.toLowerCase(); }));
-    var codeSet = new Set(codes.map(function (c) { return c.toLowerCase(); }));
-    if (hasDefs) {
-      var undefinedCodes = codes.filter(function (c) { return !headingSet.has(c.toLowerCase()); });
-      var orphans = headings.filter(function (h) { return !codeSet.has(h.toLowerCase()); });
-      if (undefinedCodes.length) {
-        out.push("> **These codes have no definition yet:** " + undefinedCodes.join(", ") + ". Under Code definitions below, add a line for each in the Heading 3 style, spelled exactly like the code, and write its definition underneath.");
-        out.push("");
-      }
-      if (orphans.length) {
-        out.push("> **These definitions no longer match a code in use:** " + orphans.join(", ") + ". The code may have been renamed, merged, or removed.");
-        out.push("");
-      }
-    }
-    Zotero.CodingTemplatesCodebook = codes.slice();
 
-    out.push("## Codes in use");
+    var outlets = [];
+    var byOutlet = {};
+    var bySrc = {};
+    var srcOrder = [];
+    allEx.forEach(function (e) {
+      var o = e.source.outlet || "(no publication)";
+      if (!byOutlet[o]) { byOutlet[o] = { total: 0, counts: {} }; outlets.push(o); }
+      if (!bySrc[e.source.link]) { bySrc[e.source.link] = { source: e.source, total: 0, counts: {} }; srcOrder.push(e.source.link); }
+      byOutlet[o].total += 1;
+      bySrc[e.source.link].total += 1;
+      e.codes.forEach(function (c) {
+        byOutlet[o].counts[c] = (byOutlet[o].counts[c] || 0) + 1;
+        bySrc[e.source.link].counts[c] = (bySrc[e.source.link].counts[c] || 0) + 1;
+      });
+    });
+    outlets.sort(ci);
+
+    out.push("## Codes by publication");
     out.push("");
     if (!codes.length) {
       out.push("> No tagged highlights were found. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
     } else {
-      out.push("| Code | Extracts | Sources | Example |");
-      out.push("| :-- | :-: | :-: | :-- |");
+      out.push("*Each cell counts the extracts with that code in sources from that publication. The last row is the number of coded extracts from each publication.*");
+      out.push("");
+      out.push("| Code | " + outlets.map(cell).join(" | ") + " | All |");
+      out.push("| :-- |" + outlets.map(function () { return " :-: |"; }).join("") + " :-: |");
       codes.forEach(function (c) {
-        var list = byCode[c];
-        var sample = list[0].text || list[0].memo || "";
-        out.push("| **" + cell(c) + "** | " + list.length + " | " + countSources(list) + " | " + cell(mdEscape(shorten(sample, 160))) + " |");
+        var row = "| **" + cell(c) + "** |";
+        outlets.forEach(function (o) { row += " " + (byOutlet[o].counts[c] || 0) + " |"; });
+        out.push(row + " " + byCode[c].length + " |");
+      });
+      var totals = "| *Coded extracts* |";
+      outlets.forEach(function (o) { totals += " " + byOutlet[o].total + " |"; });
+      out.push(totals + " " + allEx.length + " |");
+      out.push("");
+      out.push("## Codes by source");
+      out.push("");
+      out.push("*One row for each source that has coded extracts. Each cell counts the extracts with that code in that source.*");
+      out.push("");
+      out.push("| Source | " + codes.map(cell).join(" | ") + " | Coded extracts |");
+      out.push("| :-- |" + codes.map(function () { return " :-: |"; }).join("") + " :-: |");
+      srcOrder.forEach(function (link) {
+        var s = bySrc[link];
+        var name = cell(mdEscape(shorten(s.source.title, 60)));
+        if (s.source.outlet) name += " (" + cell(mdEscape(s.source.outlet)) + ")";
+        var row = "| [" + name + "](" + s.source.link + ") |";
+        codes.forEach(function (c) { row += " " + (s.counts[c] || 0) + " |"; });
+        out.push(row + " " + s.total + " |");
       });
     }
     out.push("");
     out.push("## Analytical Notes");
     out.push("");
-    out.push("*Define each code after the line below. Every code has its own heading there. Say what the code means, when to use it, and when not to use it. After you add or rename codes, refresh this note and it will tell you which codes still need a definition.*");
+    out.push("*Write your thoughts about these patterns after the line below. For example, note which codes are concentrated in one publication or source, which appear everywhere, and what that might tell you.*");
     return out.join("\n");
   }}$
-  // @beforeloop-end
-  // @default-begin
-  // @default-end

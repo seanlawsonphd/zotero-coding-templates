@@ -1,10 +1,9 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Item] Theme Map BODY (do not use)"
+name: "[text] Helper for Theme Document (do not use)"
 content: |-
   // @use-refresh
-  // @beforeloop-begin
   // @use-markdown
   ${{
     var ask = function (title, msg, def) {
@@ -29,6 +28,7 @@ content: |-
       var lib = Zotero.Libraries.get(item.libraryID);
       return lib && lib.isGroup ? "groups/" + lib.id : "library";
     };
+
 
     // Full reference for a source, in APA style. Change the style id below to use
     // another installed citation style.
@@ -96,7 +96,6 @@ content: |-
       var attIDs = item.isAttachment() ? [item.id] : item.getAttachments();
       var out = [];
       var skipped = [];
-      var untagged = [];
       for (var i = 0; i < attIDs.length; i++) {
         var att = Zotero.Items.get(attIDs[i]);
         if (!att) {
@@ -121,25 +120,7 @@ content: |-
             .getTags()
             .map(function (t) { return t.tag; })
             .filter(function (t) { return t && t.indexOf("zotero://") !== 0; });
-          var link =
-            "zotero://open/" + scope(item) + "/items/" +
-            att.key + "?annotation=" + ann.key;
-          var who = "";
-          try {
-            who = ann.annotationAuthorName || "";
-            if (!who && ann.createdByUserID) who = Zotero.Users.getName(ann.createdByUserID) || "";
-          } catch (e) {
-            who = "";
-          }
-          if (!codes.length) {
-            if (text || memo) {
-              untagged.push({
-                text: text, memo: memo, codes: [], source: source,
-                page: ann.annotationPageLabel || "", link: link, author: who, att: att.key
-              });
-            }
-            continue;
-          }
+          if (!codes.length) continue;
           // Coded, but nothing to quote. Usually an image or area annotation.
           // Record it so the report can say so instead of dropping it silently.
           if (!text && !memo) {
@@ -152,16 +133,16 @@ content: |-
             codes: codes,
             source: source,
             page: ann.annotationPageLabel || "",
-            link: link,
-            author: who,
-            att: att.key
+            link:
+              "zotero://open/" + scope(item) + "/items/" +
+              att.key + "?annotation=" + ann.key
           });
         }
       }
-      return { source: source, extracts: out, skipped: skipped, untagged: untagged };
+      return { source: source, extracts: out, skipped: skipped };
     };
 
-    var renderExtract = function (e, showCodes) {
+    var renderExtract = function (e) {
       var lines = [];
       lines.push(e.text ? "> " + e.text : "> *(no highlighted text, memo only)*");
       lines.push("> ");
@@ -173,10 +154,8 @@ content: |-
         lines.push("> ");
         lines.push("> **Memo:** " + e.memo);
       }
-      if (showCodes && e.codes.length > 1) {
-        lines.push("> ");
-        lines.push("> *Also coded:* " + e.codes.join(", "));
-      }
+      lines.push("> ");
+      lines.push("> **Codes:** " + e.codes.join(", "));
       return lines.join("\n");
     };
 
@@ -197,6 +176,61 @@ content: |-
       return null;
     };
 
+    // ---------- resolve the scope ----------
+    var pane = null;
+    try {
+      pane = Zotero.getActiveZoteroPane();
+    } catch (e) {
+      pane = null;
+    }
+    if (!pane) {
+      try {
+        pane = Zotero.getMainWindow().ZoteroPane;
+      } catch (e) {
+        pane = null;
+      }
+    }
+
+    var coll = null;
+    if (pane && typeof pane.getSelectedCollection === "function") {
+      try {
+        coll = pane.getSelectedCollection() || null;
+      } catch (e) {
+        coll = null;
+      }
+    }
+
+    var libraryID = coll ? coll.libraryID : Zotero.Libraries.userLibraryID;
+    var wholeLibrary = false;
+
+    if (_env.dryRun) {
+      return "> Preview mode does not scan the library.";
+    }
+
+    if (!coll) {
+      var typed = clean(
+        ask(
+          "Theme Document",
+          "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
+          ""
+        )
+      );
+      if (typed === "*") {
+        wholeLibrary = true;
+      } else if (typed) {
+        coll = findCollection(libraryID, typed);
+        if (!coll) {
+          return "> No collection named **" + typed +
+            "** was found. Check the spelling, or click the collection in the left pane before running this template.";
+        }
+      } else {
+        return "> Nothing to scan. Click a collection in the left pane and run this template again, or type a collection name at the prompt.";
+      }
+    }
+
+    // On refresh, reuse the theme name and code list already recorded in the
+    // note rather than prompting again. Editing that line in the note and
+    // refreshing is how a student regroups codes into a different theme.
     // ---------- combining codes ----------
     // A Boolean expression over an extract's own codes. Operators are AND, OR and
     // NOT in capital letters, with parentheses for grouping. Anything else is a
@@ -353,158 +387,202 @@ content: |-
       return spec;
     };
 
-    // The sources are the items this template was run on (kept in the block
-    // header, so a refresh scans the same items). Selected notes are set aside.
-    var noteItems = items.filter(function (it) { return it.isNote && it.isNote(); });
-    var scanItems = items.filter(function (it) { return !(it.isNote && it.isNote()); });
-
-
-    // ---------- harvest ----------
-    var byCode = {};
-    var uncoded = [];
-    var skippedAll = [];
-    var codedSources = 0;
-    var sourceList = [];
-    var allEx = [];
-    var untaggedAll = [];
-    for (var n = 0; n < scanItems.length; n++) {
-      var res = await harvest(scanItems[n]);
-      sourceList.push(res.source);
-      res.untagged.forEach(function (u) { untaggedAll.push(u); });
-      res.extracts.forEach(function (e0) { allEx.push(e0); });
-      for (var s = 0; s < res.skipped.length; s++) skippedAll.push(res.skipped[s]);
-      if (!res.extracts.length) {
-        uncoded.push(res.source);
-        continue;
+    var prior = null;
+    try {
+      if (targetNoteItem && typeof targetNoteItem.getNote === "function") {
+        var plain = (targetNoteItem.getNote() || "")
+          .replace(/<[^>]+>/g, "\n")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, "\"")
+          .replace(/&#39;/g, "'");
+        var mCodes = plain.match(/Codes in this theme:\s*([^\n]*)/);
+        var priorCodes = mCodes ? clean(mCodes[1]) : "";
+        if (priorCodes && priorCodes.indexOf("(none yet)") === -1) {
+          prior = { codes: priorCodes };
+        }
       }
-      codedSources += 1;
+    } catch (e) {
+      prior = null;
+    }
+
+    var codeInput;
+    if (prior) {
+      codeInput = prior.codes;
+    } else {
+      codeInput = ask(
+        "Theme Document",
+        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final. To combine codes, use AND, OR and NOT in capital letters, for example: fear appeal AND NOT humor. A plus sign also means AND, so you can paste a pair from a Code Matrix",
+        ""
+      );
+    }
+
+    var declared = codeInput
+      .split(",")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+    var spec = parseCodesLine(codeInput);
+    declared = spec.declared;
+    var wanted = new Set(declared.map(function (c) { return c.toLowerCase(); }));
+
+    // ---------- gather top-level items ----------
+    var items = [];
+    var seenIDs = new Set();
+    var keep = function (it) {
+      if (!it || seenIDs.has(it.id)) return;
+      if (it.isNote && it.isNote()) return;
+      if (it.isAnnotation && it.isAnnotation()) return;
+      if (it.isAttachment && it.isAttachment() && it.parentItemID) return;
+      seenIDs.add(it.id);
+      items.push(it);
+    };
+
+    var scopeName = "Entire library";
+    if (wholeLibrary) {
+      var all = await Zotero.Items.getAll(libraryID, true);
+      for (var a = 0; a < all.length; a++) keep(all[a]);
+    } else {
+      scopeName = coll.name;
+      var walk = function (c) {
+        var kids = [];
+        try { kids = c.getChildItems() || []; } catch (e) { kids = []; }
+        for (var i = 0; i < kids.length; i++) keep(kids[i]);
+        var subs = [];
+        try { subs = c.getChildCollections() || []; } catch (e) { subs = []; }
+        for (var j = 0; j < subs.length; j++) walk(subs[j]);
+      };
+      walk(coll);
+    }
+
+    // ---------- harvest, filtered to the declared codes ----------
+    var byCode = {};
+    var seenCodes = new Set();
+    var matchedSources = new Set();
+    var skippedAll = [];
+    var sourceList = [];
+    for (var n = 0; n < items.length; n++) {
+      var res = await harvest(items[n]);
+      sourceList.push(res.source);
+      // Skipped annotations still count as codes seen, so a code that exists only
+      // on image annotations is not reported as a typo.
+      for (var s = 0; s < res.skipped.length; s++) {
+        var sk = res.skipped[s];
+        for (var t = 0; t < sk.codes.length; t++) {
+          seenCodes.add(sk.codes[t]);
+          if (wanted.has(sk.codes[t].toLowerCase())) skippedAll.push(sk);
+        }
+      }
       for (var x = 0; x < res.extracts.length; x++) {
         var ex = res.extracts[x];
-        for (var y = 0; y < ex.codes.length; y++) {
-          var c = ex.codes[y];
+        ex.codes.forEach(function (c0) { seenCodes.add(c0); });
+        var exSet = new Set(ex.codes.map(function (c0) { return c0.toLowerCase(); }));
+        if (!spec.test(exSet)) continue;
+        var listed = ex.codes.filter(function (c0) { return wanted.has(c0.toLowerCase()); });
+        // With AND/OR/NOT each extract is shown once; a plain list shows it
+        // under every listed code it carries.
+        var keys = spec.usesLogic ? [listed.length ? listed[0] : ex.codes[0]] : listed;
+        keys.forEach(function (c) {
           if (!byCode[c]) byCode[c] = [];
           byCode[c].push(ex);
-        }
+        });
+        matchedSources.add(ex.source.link);
       }
     }
 
     // ---------- render ----------
-    var ci = function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); };
-    var codes = Object.keys(byCode).sort(ci);
-    var countSources = function (list) {
-      var s = new Set(list.map(function (e) { return e.source.link; }));
-      return s.size;
-    };
-    var cell = function (text) { return String(text).replace(/\|/g, "\\|"); };
-    var shorten = function (text, max) {
-      text = String(text || "");
-      return text.length > max ? text.slice(0, max - 1).trim() + "\u2026" : text;
-    };
-    var cite = function (e) {
-      var line = "> **Source:** " + mdEscape(e.source.cite);
-      if (e.page) line += " (p. " + e.page + ")";
-      return line + " [\\[Open highlight\\]](" + e.link + ")";
-    };
-    var scannedLabel = scanItems.length + " selected item(s)";
-    var out = [];
-    var lower = function (list) { return new Set(list.map(function (c) { return c.toLowerCase(); })); };
-    var themes = [];
-    noteItems.forEach(function (n) {
-      if (targetNoteItem && n.id === targetNoteItem.id) return;
-      var html = "";
-      try { html = n.getNote() || ""; } catch (e) { html = ""; }
-      var plain = html
-        .replace(/<[^>]+>/g, "\n")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, "\"")
-        .replace(/&#39;/g, "'");
-      var m = plain.match(/Codes in this theme:\s*([^\n]*)/);
-      if (!m) return;
-      var line = clean(m[1]);
-      if (line.indexOf("(none yet)") !== -1) line = "";
-      var title = "";
-      try { title = n.getNoteTitle() || ""; } catch (e) { title = ""; }
-      title = clean(title.replace(/^Theme:\s*/i, "")) || "Untitled theme";
-      var spec = parseCodesLine(line);
-      var matched = allEx.filter(function (e) { return spec.test(lower(e.codes)); });
-      themes.push({
-        title: title, line: line, spec: spec, matched: matched,
-        link: "zotero://select/" + scope(n) + "/items/" + n.key
+    // Codes appear in the order they are listed in "Codes in this theme", so
+    // reordering that line regroups the evidence.
+    var codes = [];
+    var found = new Set();
+    for (var d = 0; d < declared.length; d++) {
+      var want = declared[d].toLowerCase();
+      Object.keys(byCode).forEach(function (key) {
+        if (key.toLowerCase() === want && codes.indexOf(key) === -1) {
+          codes.push(key);
+          found.add(want);
+        }
+      });
+    }
+    var seenLower = new Set(Array.from(seenCodes).map(function (c) { return c.toLowerCase(); }));
+    Object.keys(byCode).forEach(function (key) {
+      if (codes.indexOf(key) === -1) codes.push(key);
+    });
+    var missing = spec.mentioned.filter(function (c) {
+      return !seenLower.has(c.toLowerCase());
+    });
+    var seenList = Array.from(seenCodes).sort(function (a, b) {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+
+    var total = 0;
+    for (var t2 = 0; t2 < codes.length; t2++) total += byCode[codes[t2]].length;
+
+    var flat = [];
+    var flatSeen = new Set();
+    codes.forEach(function (key) {
+      byCode[key].forEach(function (e) {
+        if (flatSeen.has(e.link)) return;
+        flatSeen.add(e.link);
+        flat.push(e);
       });
     });
-    themes.sort(function (a, b) { return ci(a.title, b.title); });
+    total = flat.length;
+
+    var out = [];
     out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
     out.push("## Scope");
     out.push("");
-    out.push("- **" + "Built from " + themes.length + " theme(s), " + codes.length + " code(s), and " + allEx.length + " extract(s), out of " + scanItems.length + " sources scanned." + "**");
-    out.push("- **Scanned:** " + scannedLabel);
-    var shown = sourceList.slice(0, 50);
-    for (var s2 = 0; s2 < shown.length; s2++) {
-      out.push("  - " + mdEscape(shown[s2].cite));
-    }
-    if (sourceList.length > shown.length) {
-      out.push("  - and " + (sourceList.length - shown.length) + " more");
-    }
-    out.push("- **Generated:** " + new Date().toLocaleString());
+    out.push(
+      "- **Built from " + codes.length + " code(s), " + total + " extract(s), " +
+      matchedSources.size + " source(s), out of " + items.length + " sources scanned.**"
+    );
+    out.push("- **Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
+    out.push("- **Codes in this theme:** " + (spec.raw ? spec.raw : "*(none yet)*"));
     out.push("");
-    out.push("## Themes");
+    out.push("*To reorder the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
-    if (!themes.length) {
-      out.push("> No Theme Documents were found in what you selected. Select the theme notes together with their sources, then run this template. Make a Theme Document first, then refresh this note.");
-    } else {
-      out.push("| Theme | Codes | Extracts | Sources |");
-      out.push("| :-- | :-- | :-: | :-: |");
-      themes.forEach(function (t) {
-        out.push("| [" + cell(mdEscape(t.title)) + "](" + t.link + ") | " + (t.line ? cell(t.line) : "*none yet*") + " | " + t.matched.length + " | " + countSources(t.matched) + " |");
-      });
+    out.push("*To combine codes, use AND, OR, and NOT in capital letters in that same line, with parentheses if needed, for example: fear appeal AND NOT humor. The expression is checked against the codes on each extract. Commas still mean \"or\". A plus sign between two codes also means AND, so a pair copied from a Code Matrix works as is.*");
+    out.push("");
+    if (spec.errors.length) {
+      out.push("> **Part of the codes line was not understood and was ignored:** " + spec.errors.join("; ") + ". Write it like this: fear appeal AND NOT humor. Operators must be in capital letters.");
+      out.push("");
     }
 
-    var themesFor = function (c) {
-      var low = c.toLowerCase();
-      return themes.filter(function (t) {
-        return t.spec.declared.some(function (d) { return d.toLowerCase() === low; });
-      }).map(function (t) { return t.title; });
-    };
-    if (codes.length) {
+    if (skippedAll.length) {
+      var skCodes = new Set();
+      for (var q = 0; q < skippedAll.length; q++) {
+        skippedAll[q].codes.forEach(function (c) {
+          if (wanted.has(c.toLowerCase())) skCodes.add(c);
+        });
+      }
+      out.push("> **" + skippedAll.length + " coded annotation(s) in this theme were skipped.** They have neither highlighted text nor a memo, so there is nothing to quote. These are usually image or area annotations. Add a memo to the annotation if you want it to appear here. Codes affected: " + Array.from(skCodes).sort().join(", "));
       out.push("");
-      out.push("## Codes and their themes");
-      out.push("");
-      out.push("| Code | Extracts | Themes |");
-      out.push("| :-- | :-: | :-- |");
-      codes.forEach(function (c) {
-        var names = themesFor(c);
-        out.push("| **" + cell(c) + "** | " + byCode[c].length + " | " + (names.length ? cell(names.join("; ")) : "*none*") + " |");
-      });
     }
 
-    var codeSet = lower(codes);
-    var orphan = codes.filter(function (c) { return !themesFor(c).length; });
-    var shared = codes.filter(function (c) { return themesFor(c).length > 1; });
-    var unknown = [];
-    themes.forEach(function (t) {
-      t.spec.mentioned.forEach(function (c) {
-        if (!codeSet.has(c.toLowerCase())) unknown.push(c + " (" + t.title + ")");
-      });
-    });
-    var covered = new Set();
-    themes.forEach(function (t) { t.matched.forEach(function (e) { covered.add(e.link); }); });
-    out.push("");
-    out.push("## Check these");
-    out.push("");
-    out.push("- **Codes not in any theme:** " + (orphan.length ? orphan.join(", ") : "none"));
-    out.push("- **Codes in more than one theme:** " + (shared.length ? shared.map(function (c) { return c + " (" + themesFor(c).join("; ") + ")"; }).join(", ") : "none"));
-    out.push("- **Codes named in a theme but not found in the sources:** " + (unknown.length ? unknown.join(", ") : "none"));
-    out.push("- **Coded extracts not covered by any theme:** " + (allEx.length - covered.size) + " of " + allEx.length);
+    if (missing.length) {
+      out.push("> **Check these codes:** " + missing.join(", ") + ". They do not appear in what was scanned. Codes match on exact spelling, so look for a typo or different capitalization.");
+      out.push(">");
+      out.push("> Codes actually present in what was scanned: " + (seenList.length ? seenList.join(", ") : "none"));
+      out.push("");
+    }
+
+    out.push("## Evidence");
+    if (!flat.length) {
+      out.push("");
+      out.push("> Nothing to show. Check the codes line above. A Code Overview lists the exact spelling of the codes you have applied.");
+    }
+    for (var p2 = 0; p2 < flat.length; p2++) {
+      out.push("");
+      out.push(renderExtract(flat[p2]));
+    }
+
     out.push("");
     out.push("## Analytical Notes");
     out.push("");
-    out.push("*Write your thoughts about how the themes fit together after the line below. For example, note codes that belong in no theme, themes that overlap and might merge, and gaps the themes leave uncovered.*");
+    out.push("*Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.*");
+
     return out.join("\n");
   }}$
-  // @beforeloop-end
-  // @default-begin
-  // @default-end
