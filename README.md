@@ -1,29 +1,30 @@
-# Coding and theming in Zotero: Code Overview, Code Report, and Theme Document templates
+# Coding and theming in Zotero: templates for Better Notes
 
 These templates turn Zotero into a simple qualitative-coding tool for class projects. You read
 your sources in Zotero, highlight passages, and tag each highlight with a **code**. The templates
-then build three kinds of notes for you:
+then build four kinds of notes for you:
 
 - A **Code Overview** counts every code you have used: how many extracts and sources each has.
+- A **Code Co-occurrence** table shows how often each pair of codes lands on the same passage.
 - A **Code Report** gathers every passage for **one code**, with a quotation, a full reference, a
   link back to the exact spot in the source, and any memo you wrote.
 - A **Theme Document** gathers the passages for a chosen group of codes (a theme) and gives you a
   place to write your analysis of that theme.
 
-All three can be **refreshed** after you do more coding, so you never rebuild them by hand.
+All four can be **refreshed** after you do more coding, so you never rebuild them by hand.
 
 ## What is in this folder
 
 Each kind of note comes in two versions. Run the one that fits what you want to scan:
 
-| To scan | Code Overview | Code Report | Theme Document |
-|---|---|---|---|
-| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
-| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Report` | `[Item] Theme Document` |
+| To scan | Code Overview | Code Co-occurrence | Code Report | Theme Document |
+|---|---|---|---|---|
+| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Co-occurrence (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
+| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Co-occurrence` | `[Item] Code Report` | `[Item] Theme Document` |
 
-Each of those six has a helper whose name ends in **BODY (do not use)**. The helpers do the real
+Each of those eight has a helper whose name ends in **BODY (do not use)**. The helpers do the real
 work and are called by name, so they must be installed, but you never run them yourself. That
-makes **twelve files** in the `templates` folder, and all twelve must be installed.
+makes **sixteen files** in the `templates` folder, and all sixteen must be installed.
 
 ## Before you start
 
@@ -38,7 +39,7 @@ makes **twelve files** in the `templates` folder, and all twelve must be install
 Templates live inside your own copy of Zotero; they are not shared through Zotero sync, so every
 student does this once.
 
-For **each of the twelve files** in the `templates` folder:
+For **each of the sixteen files** in the `templates` folder:
 
 1. Open the file on GitHub and click **Raw** (top right of the file view), or open it in any text
    editor.
@@ -47,7 +48,7 @@ For **each of the twelve files** in the `templates` folder:
 3. In Zotero, choose **Tools → New Template from Clipboard** and click **OK**.
 
 To check: **Tools → Template Editor** lists every template you have installed. You should see all
-twelve names from the table above.
+sixteen names from the table above.
 
 ## Step 1: Code your sources
 
@@ -96,7 +97,29 @@ your whole library.
 **[Item] Code Overview**. When Zotero asks for the data source, choose **Use selected items in
 library**. This version shows Scope and the codebook table only.
 
-## Step 3: Build a Code Report for one code
+## Step 3: See which codes co-occur
+
+Use this to find codes that travel together, which often points to a theme, or to two codes that
+are really one.
+
+1. Click the collection in the left pane (or select items and use the **[Item]** version).
+2. **New Note → New Standalone Note from Template → [Text] Code Co-occurrence (Collection)**.
+3. Type a title and click **OK**.
+
+The note contains:
+
+- The red refresh warning and **Scope**, which also counts the extracts that carry more than one
+  code.
+- **Co-occurrence table.** Every code appears along the top and down the side. Each cell is the
+  number of extracts (highlights) that carry **both** codes. The bold numbers on the diagonal are
+  the total extracts for that code. A dot means the two codes never share an extract.
+- **Pairs that co-occur.** The same information as a list, most frequent pair first. Easier to read
+  than the table once you have many codes.
+
+Co-occurrence is counted per highlight. Two codes on different highlights in the same source do
+not count as co-occurring.
+
+## Step 4: Build a Code Report for one code
 
 Use this to read everything you coded with a single code, side by side.
 
@@ -120,7 +143,7 @@ The note contains:
 To switch the report to a different code, edit the **Code:** line and refresh. The note's title
 does not change by itself, so retype it if you switch codes.
 
-## Step 4: Build Theme Documents
+## Step 5: Build Theme Documents
 
 Once the Code Overview shows you your codes, group related codes into **themes**. Make one Theme
 Document per theme.
@@ -191,7 +214,7 @@ holds the library, so the quotations and citations in the exported file are what
 | "Check these codes: …" in a Theme Document | A code in your list is spelled differently from the tag. Copy the exact spelling from the "codes actually present" list or from the Code Overview, edit the **Codes in this theme:** line, and refresh |
 | "N coded annotation(s) skipped" | Those are image or area annotations with no text and no memo. Add a comment to each one, then refresh |
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
-| The template is not listed in the picker | Install all twelve files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
+| The template is not listed in the picker | Install all sixteen files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
 | A note made before the templates were updated will not refresh properly | The templates were restructured. Make a new note from the template |
 | A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
 | The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
