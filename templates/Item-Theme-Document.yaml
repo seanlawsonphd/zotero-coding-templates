@@ -291,22 +291,19 @@ content: |-
     out.push("## Scope");
     out.push("");
     out.push(
-      "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
+      "- **Built from " + codes.length + " code(s), " + total + " extract(s), " +
       sharedObj.matchedSources.size + " source(s), out of " +
       sharedObj.sources + " sources scanned.**"
     );
-    out.push("");
-    out.push("**Scanned:** " + sharedObj.sources + " selected item(s)");
-    out.push("");
+    out.push("- **Scanned:** " + sharedObj.sources + " selected item(s)");
     var shown = sharedObj.sourceList.slice(0, 30);
     for (var s = 0; s < shown.length; s++) {
-      out.push("- [" + sharedObj.mdEscape(shown[s].label) + "](" + shown[s].link + ") " + sharedObj.mdEscape(shown[s].title));
+      out.push("  - [" + sharedObj.mdEscape(shown[s].label) + "](" + shown[s].link + ") " + sharedObj.mdEscape(shown[s].title));
     }
     if (sharedObj.sourceList.length > shown.length) {
-      out.push("- and " + (sharedObj.sourceList.length - shown.length) + " more");
+      out.push("  - and " + (sharedObj.sourceList.length - shown.length) + " more");
     }
-    out.push("");
-    out.push("**Codes in this theme:** " + (sharedObj.declared.length ? sharedObj.declared.join(", ") : "*(none yet)*"));
+    out.push("- **Codes in this theme:** " + (sharedObj.declared.length ? sharedObj.declared.join(", ") : "*(none yet)*"));
     out.push("");
     out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");

@@ -355,13 +355,11 @@ content: |-
     out.push("## Scope");
     out.push("");
     out.push(
-      "**Built from " + codes.length + " code(s), " + total + " extract(s), " +
+      "- **Built from " + codes.length + " code(s), " + total + " extract(s), " +
       matchedSources.size + " source(s), out of " + items.length + " sources scanned.**"
     );
-    out.push("");
-    out.push("**Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
-    out.push("");
-    out.push("**Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
+    out.push("- **Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
+    out.push("- **Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
     out.push("");
     out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
