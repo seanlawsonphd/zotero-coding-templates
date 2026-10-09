@@ -532,13 +532,6 @@ content: |-
       matchedSources.size + " source(s), out of " + items.length + " sources scanned.**"
     );
     out.push("- **Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
-    var shown = sourceList.slice(0, 50);
-    for (var s2 = 0; s2 < shown.length; s2++) {
-      out.push("  - " + mdEscape(shown[s2].cite));
-    }
-    if (sourceList.length > shown.length) {
-      out.push("  - and " + (sourceList.length - shown.length) + " more");
-    }
     out.push("- **Codes in this theme:** " + (spec.raw ? spec.raw : "*(none yet)*"));
     out.push("");
     out.push("*To reorder the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");

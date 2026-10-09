@@ -5,7 +5,7 @@ your sources in Zotero, highlight passages, and tag each highlight with a **code
 then build four kinds of notes for you:
 
 - A **Code Overview** counts every code you have used: how many extracts and sources each has.
-- A **Code Co-occurrence** table shows how often each pair of codes lands on the same passage.
+- A **Code Matrix** shows how often each pair of codes lands on the same passage.
 - A **Code Report** gathers every passage for **one code**, with a quotation, a full reference, a
   link back to the exact spot in the source, and any memo you wrote.
 - A **Theme Document** gathers the passages for a chosen group of codes (a theme) and gives you a
@@ -17,10 +17,10 @@ All four can be **refreshed** after you do more coding, so you never rebuild the
 
 Each kind of note comes in two versions. Run the one that fits what you want to scan:
 
-| To scan | Code Overview | Code Co-occurrence | Code Report | Theme Document |
+| To scan | Code Overview | Code Matrix | Code Report | Theme Document |
 |---|---|---|---|---|
-| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Co-occurrence (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
-| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Co-occurrence` | `[Item] Code Report` | `[Item] Theme Document` |
+| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Matrix (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
+| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Matrix` | `[Item] Code Report` | `[Item] Theme Document` |
 
 Each of those eight has a helper whose name ends in **BODY (do not use)**. The helpers do the real
 work and are called by name, so they must be installed, but you never run them yourself. That
@@ -83,8 +83,7 @@ Use this after each round of coding to see all your codes and how often they occ
 The note contains:
 
 - A **warning in red** that everything down to the line at the bottom is regenerated on refresh.
-- **Scope.** A count of codes, extracts, and sources, what was scanned with the full reference of
-  every source, and when the overview was generated.
+- **Scope.** A count of codes, extracts, and sources, what was scanned, and when the overview was generated.
 - **Codebook at a glance.** A table of every code with how many extracts and sources it has.
   Check it for near-duplicates such as `Fear appeal` and `fear appeal`.
 - **Sources with no coded extracts.** Sources in the collection you have not coded yet.
@@ -103,16 +102,16 @@ Use this to find codes that travel together, which often points to a theme, or t
 are really one.
 
 1. Click the collection in the left pane (or select items and use the **[Item]** version).
-2. **New Note → New Standalone Note from Template → [Text] Code Co-occurrence (Collection)**.
+2. **New Note → New Standalone Note from Template → [Text] Code Matrix (Collection)**.
 3. Type a title and click **OK**.
 
 The note contains:
 
 - The red refresh warning and **Scope**, which also counts the extracts that carry more than one
   code.
-- **Co-occurrence table.** Every code appears along the top and down the side. Each cell is the
-  number of extracts (highlights) that carry **both** codes. The bold numbers on the diagonal are
-  the total extracts for that code. A dot means the two codes never share an extract.
+- **Code matrix.** Every code appears along the top and down the side. Each cell is the number of
+  extracts (highlights) that carry **both** codes. A dash marks where a code meets itself, and 0
+  means the two codes never share an extract.
 - **Pairs that co-occur.** The same information as a list, most frequent pair first. Easier to read
   than the table once you have many codes.
 
@@ -159,7 +158,7 @@ The note has a generated block followed by space for your writing:
 
 - A **warning in red** that everything down to the line under Analytical Notes is regenerated on
   refresh.
-- **Scope.** A count of codes, extracts, and sources, what was scanned, with the full reference of every source, and the **Codes in this theme:** line.
+- **Scope.** A count of codes, extracts, and sources, what was scanned, and the **Codes in this theme:** line.
 - **Check these codes:** appears if a code you listed matched nothing. It shows the codes that
   actually exist in those sources, so you can spot a typo.
 - **Evidence.** One list of passages, each shown once: the quotation, its **full reference** (APA
@@ -193,6 +192,9 @@ accept more than a plain list. Type an expression there (and refresh, if the not
 - The theme **name** is only a title. Put the expression in the codes line, not in the name.
 - If part of the line cannot be read, the note says so.
 - Put a code in double quotes if its name contains a capitalized operator word or parentheses.
+
+**What "Scanned" shows.** Collection versions name the collection and the number of sources in
+it. Selected-items versions list the full reference of each item.
 
 ## Refreshing a note after more coding
 

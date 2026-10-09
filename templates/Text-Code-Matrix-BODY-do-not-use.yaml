@@ -1,7 +1,7 @@
 # Better Notes template share code. To install: copy this whole file's contents,
 # then in Zotero choose Tools -> New Template from Clipboard, and click OK.
 # Do not paste this into the Note Template Editor directly.
-name: "[Text] Code Co-occurrence BODY (do not use)"
+name: "[Text] Code Matrix BODY (do not use)"
 content: |-
   // @use-refresh
   // @use-markdown
@@ -207,7 +207,7 @@ content: |-
     if (!coll && !_env.dryRun) {
       var typed = clean(
         ask(
-          "Code Co-occurrence",
+          "Code Matrix",
           "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
           ""
         )
@@ -322,13 +322,6 @@ content: |-
     );
     out.push("- **Extracts with more than one code:** " + multi);
     out.push("- **Scanned:** " + scannedLabel);
-    var shown = sourceList.slice(0, 50);
-    for (var s2 = 0; s2 < shown.length; s2++) {
-      out.push("  - " + mdEscape(shown[s2].cite));
-    }
-    if (sourceList.length > shown.length) {
-      out.push("  - and " + (sourceList.length - shown.length) + " more");
-    }
     out.push("- **Generated:** " + new Date().toLocaleString());
     out.push("");
 
@@ -337,13 +330,13 @@ content: |-
       out.push("");
     }
 
-    out.push("## Co-occurrence table");
+    out.push("## Code matrix");
     out.push("");
     if (!codes.length) {
       out.push("> No tagged highlights were found. Highlight a passage in the Zotero reader, then add a tag to that highlight in the annotation sidebar. A highlight with no tag is not a code.");
       return out.join("\n");
     }
-    out.push("*Each cell counts the extracts (highlights) that carry both codes. The numbers in bold on the diagonal are the total extracts for that code. A dot means the two codes never appear on the same extract.*");
+    out.push("*Each cell counts the extracts (highlights) that carry both codes. A dash marks where a code meets itself, and 0 means the two codes never appear on the same extract.*");
     out.push("");
     out.push("| | " + codes.map(cell).join(" | ") + " |");
     out.push("| :-- |" + codes.map(function () { return " :-: |"; }).join(""));
@@ -351,10 +344,10 @@ content: |-
       var row = "| **" + cell(codes[r]) + "** |";
       for (var c2 = 0; c2 < codes.length; c2++) {
         if (r === c2) {
-          row += " **" + byCode[codes[r]].length + "** |";
+          row += " - |";
         } else {
           var count = pairCount[pairKey(codes[r], codes[c2])] || 0;
-          row += " " + (count ? count : "\u00b7") + " |";
+          row += " " + count + " |";
         }
       }
       out.push(row);

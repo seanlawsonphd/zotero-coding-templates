@@ -344,13 +344,6 @@ content: |-
       " source(s), out of " + items.length + " sources scanned.**"
     );
     out.push("- **Scanned:** " + scannedLabel);
-    var shown = sourceList.slice(0, 50);
-    for (var s2 = 0; s2 < shown.length; s2++) {
-      out.push("  - " + mdEscape(shown[s2].cite));
-    }
-    if (sourceList.length > shown.length) {
-      out.push("  - and " + (sourceList.length - shown.length) + " more");
-    }
     out.push("- **Code:** " + (code ? code : "*(none yet)*"));
     out.push("");
     out.push("*To report on a different code, change the code in the line above, then refresh this note (More Options, then Update content from templates).*");
