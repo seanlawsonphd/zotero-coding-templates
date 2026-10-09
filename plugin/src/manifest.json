@@ -1,0 +1,16 @@
+{
+	"manifest_version": 2,
+	"name": "Coding Templates for Better Notes",
+	"version": "1.0.0",
+	"description": "Installs and updates the Code Overview, Code Matrix, Code Report, and Theme Document note templates in Better Notes.",
+	"author": "Sean Lawson",
+	"homepage_url": "https://github.com/seanlawsonphd/zotero-coding-templates",
+	"applications": {
+		"zotero": {
+			"id": "coding-templates@seanlawsonphd",
+			"update_url": "https://raw.githubusercontent.com/seanlawsonphd/zotero-coding-templates/main/updates.json",
+			"strict_min_version": "7.0",
+			"strict_max_version": "10.*"
+		}
+	}
+}

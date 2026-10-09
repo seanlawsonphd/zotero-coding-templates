@@ -28,27 +28,64 @@ makes **sixteen files** in the `templates` folder, and all sixteen must be insta
 
 ## Before you start
 
+You need three things, all free. Everything below works the same on Windows and Mac.
+
 1. **Zotero 7 or later**: https://www.zotero.org/download/
-2. **The Better Notes plugin**, which adds note templates to Zotero. Download the latest `.xpi`
-   from https://github.com/windingwind/zotero-better-notes/releases, then in Zotero open
-   **Tools → Plugins**, click the gear icon, choose **Install Plugin From File…**, and pick the file.
+2. **The Better Notes plugin**, which adds note templates to Zotero.
 3. Your sources in Zotero, each with a PDF or a snapshot you can open in Zotero's reader.
 
-## Install the templates (once per computer, about five minutes)
+## Install (once per computer, about five minutes)
 
-Templates live inside your own copy of Zotero; they are not shared through Zotero sync, so every
-student does this once.
+You will install two small plugin files. A plugin file ends in **.xpi**.
 
-For **each of the sixteen files** in the `templates` folder:
+### 1. Download the two files
 
-1. Open the file on GitHub and click **Raw** (top right of the file view), or open it in any text
-   editor.
-2. Select **all** of the text (Ctrl+A / Cmd+A) and copy it (Ctrl+C / Cmd+C). The lines starting with
-   `#` at the top are part of the file; copying them is fine.
-3. In Zotero, choose **Tools → New Template from Clipboard** and click **OK**.
+- **Better Notes:** go to https://github.com/windingwind/zotero-better-notes/releases and, under
+  the newest release, click the file ending in `.xpi`.
+- **Coding Templates:** go to the [Releases page of this repository](../../releases/latest) and
+  click **coding-templates-…​.xpi**.
 
-To check: **Tools → Template Editor** lists every template you have installed. You should see all
-sixteen names from the table above.
+Both land in your **Downloads** folder. If your browser asks what to do with the file, choose
+**Save**. (Firefox may try to install it into Firefox itself: right-click the link and choose
+**Save Link As…** instead.)
+
+### 2. Add them to Zotero
+
+1. Open Zotero.
+2. In the menu bar, choose **Tools → Plugins**.
+3. Click the **gear icon** at the top right of the Plugins window and choose
+   **Install Plugin From File…**.
+4. Pick the Better Notes `.xpi` from your Downloads folder.
+5. Repeat steps 3 and 4 for the Coding Templates `.xpi`.
+
+A small message at the bottom corner of the screen says **Coding templates installed (16)**.
+That is all. You do not need to restart Zotero.
+
+### 3. Check that it worked
+
+Click the **New Note** button above the item list (the note icon with a plus) and choose
+**New Standalone Note from Template**. The list should include Code Overview, Code Matrix,
+Code Report, and Theme Document.
+
+### Good to know
+
+- **Updates are automatic.** When the templates are improved, Zotero updates the plugin and the new
+  templates replace the old ones.
+- **Order does not matter.** If you add Coding Templates before Better Notes, the templates are
+  installed the next time you start Zotero.
+- **To put the templates back** after changing or deleting one, choose
+  **Tools → Reinstall Coding Templates**.
+- **Templates you made yourself are not touched.**
+- Templates are stored on each computer, not in your Zotero account. Install the plugin on every
+  computer you use.
+
+<details>
+<summary>Installing by hand instead (not needed if you used the plugin)</summary>
+
+For each of the sixteen files in the `templates` folder: open the file, select all of its text,
+copy it, then in Zotero choose **Tools → New Template from Clipboard** and click **OK**.
+
+</details>
 
 ## Step 1: Code your sources
 
@@ -219,7 +256,8 @@ holds the library, so the quotations and citations in the exported file are what
 | "Check these codes: …" in a Theme Document | A code in your list is spelled differently from the tag. Copy the exact spelling from the "codes actually present" list or from the Code Overview, edit the **Codes in this theme:** line, and refresh |
 | "N coded annotation(s) skipped" | Those are image or area annotations with no text and no memo. Add a comment to each one, then refresh |
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
-| The template is not listed in the picker | Install all sixteen files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
+| A template is not listed in the picker | Choose **Tools → Reinstall Coding Templates**. If that menu entry is missing, the Coding Templates plugin is not installed (see "Install") |
+| "Better Notes was not found" | Install the Better Notes plugin, then restart Zotero |
 | A note made before the templates were updated will not refresh properly | The templates were restructured. Make a new note from the template |
 | A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
 | The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
@@ -231,6 +269,15 @@ Group libraries work the same way; the links inside the notes point into the gro
 
 - Better Notes stores templates in the Zotero profile's `prefs.js` under
   `extensions.zotero.Knowledge4Zotero.template.<name>`. They are per computer and never synced.
+- **Releasing a template change to students:** edit the template in **Tools → Template Editor**,
+  run `python3 scripts/export-templates.py` (rewrites `templates/*.yaml` from the live
+  preferences), raise `version` in `plugin/src/manifest.json`, run `python3 plugin/build.py`
+  (bundles the templates into the plugin and records the new version in `updates.json`), commit
+  and push, then run `gh release create v<version> plugin/build/coding-templates-<version>.xpi`.
+  Installed copies update themselves and reinstall the templates.
+- The plugin overwrites the sixteen bundled templates when its version changes or one is missing.
+  It never touches templates with other names. Renamed or retired templates go in the `OBSOLETE`
+  list in `plugin/src/coding-templates.js` so they are removed from students' computers.
 - Edit a template in **Tools → Template Editor** (select it, edit, **Save**). To share the edited
   version, run `python3 scripts/export-templates.py` on the computer where it was edited; it
   rewrites `templates/*.yaml` from the live preferences. Commit and push the result.

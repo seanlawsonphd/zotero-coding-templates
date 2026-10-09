@@ -1,0 +1,19 @@
+{
+	"addons": {
+		"coding-templates@seanlawsonphd": {
+			"updates": [
+				{
+					"version": "1.0.0",
+					"update_link": "https://github.com/seanlawsonphd/zotero-coding-templates/releases/download/v1.0.0/coding-templates-1.0.0.xpi",
+					"update_hash": "sha256:88bbc8add24645ff616b0d0b85c8c604b18be874a80710840ec3b8aac092a3b5",
+					"applications": {
+						"zotero": {
+							"strict_min_version": "7.0",
+							"strict_max_version": "10.*"
+						}
+					}
+				}
+			]
+		}
+	}
+}
