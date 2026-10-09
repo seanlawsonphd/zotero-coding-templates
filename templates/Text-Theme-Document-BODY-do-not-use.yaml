@@ -301,8 +301,10 @@ content: |-
     var seenCodes = new Set();
     var matchedSources = new Set();
     var skippedAll = [];
+    var sourceList = [];
     for (var n = 0; n < items.length; n++) {
       var res = await harvest(items[n]);
+      sourceList.push(res.source);
       // Skipped annotations still count as codes seen, so a code that exists only
       // on image annotations is not reported as a typo.
       for (var s = 0; s < res.skipped.length; s++) {
@@ -359,6 +361,13 @@ content: |-
       matchedSources.size + " source(s), out of " + items.length + " sources scanned.**"
     );
     out.push("- **Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
+    var shown = sourceList.slice(0, 50);
+    for (var s2 = 0; s2 < shown.length; s2++) {
+      out.push("  - " + mdEscape(shown[s2].cite));
+    }
+    if (sourceList.length > shown.length) {
+      out.push("  - and " + (sourceList.length - shown.length) + " more");
+    }
     out.push("- **Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
     out.push("");
     out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");

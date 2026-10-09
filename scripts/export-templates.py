@@ -16,6 +16,7 @@ import sys
 NAMES = [
     "[Item] Code Report",
     "[Item] Theme Document",
+    "[Item] Theme Document BODY (do not use)",
     "[Text] Code Report (Collection)",
     "[Text] Code Report BODY (do not use)",
     "[Text] Theme Document (Collection)",
