@@ -139,18 +139,18 @@ The note has a generated block followed by space for your writing:
 - **Scope.** A count of codes, extracts, and sources, what was scanned, with the full reference of every source, and the **Codes in this theme:** line.
 - **Check these codes:** appears if a code you listed matched nothing. It shows the codes that
   actually exist in those sources, so you can spot a typo.
-- **Evidence.** Each code as a heading, in the order you listed the codes, then each passage as a
-  quotation with its **full reference** (APA style), an **[Open highlight]** link back to the exact
-  spot in the source, and any memo.
+- **Evidence.** One list of passages, each shown once: the quotation, its **full reference** (APA
+  style), an **[Open highlight]** link back to the exact spot in the source, any memo, and the
+  **codes** on that passage.
 - **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
   never touched by a refresh. It starts with two headings to fill in:
   - **Theme Definition.** Two or three sentences on what this theme is about and what holds these
     codes together as a coherent theme.
   - **Insights & Observations.** Anything else that will help when you write your final report.
 
-**Regrouping.** The evidence follows the order of the codes in the **Codes in this theme:** line.
-To reorder the evidence, reorder that line. To add a code to the theme, add it to that line (to
-drop one, delete it). Then refresh the note.
+**Changing the codes.** The evidence follows the order of the codes in the **Codes in this theme:**
+line. To reorder it, reorder that line. To add a code to the theme, add it to that line (to drop
+one, delete it). Then refresh the note. The template reads that line instead of asking again.
 
 **Combining codes with AND, OR, and NOT.** The codes prompt, and the **Codes in this theme:** line,
 accept more than a plain list. Type an expression there (and refresh, if the note already exists):
@@ -166,8 +166,7 @@ accept more than a plain list. Type an expression there (and refresh, if the not
   name, so a code called `law and order` works as is.
 - The expression is checked against the codes on **each extract** (each highlight), not the whole
   source.
-- With a plain list, an extract appears under every listed code it carries. With AND, OR, or NOT,
-  each extract appears once.
+- Each extract appears once, with its own codes listed beneath it.
 - The theme **name** is only a title. Put the expression in the codes line, not in the name.
 - If part of the line cannot be read, the note says so.
 - Put a code in double quotes if its name contains a capitalized operator word or parentheses.

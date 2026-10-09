@@ -360,6 +360,8 @@ content: |-
         lines.push("> ");
         lines.push("> **Memo:** " + e.memo);
       }
+      lines.push("> ");
+      lines.push("> **Codes:** " + e.codes.join(", "));
       return lines.join("\n");
     };
 
@@ -433,6 +435,17 @@ content: |-
     var total = 0;
     for (var i = 0; i < codes.length; i++) total += sharedObj.byCode[codes[i]].length;
 
+    var flat = [];
+    var flatSeen = new Set();
+    codes.forEach(function (key) {
+      sharedObj.byCode[key].forEach(function (e) {
+        if (flatSeen.has(e.link)) return;
+        flatSeen.add(e.link);
+        flat.push(e);
+      });
+    });
+    total = flat.length;
+
     var out = [];
     out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
     out.push("");
@@ -453,7 +466,7 @@ content: |-
     }
     out.push("- **Codes in this theme:** " + (spec.raw ? spec.raw : "*(none yet)*"));
     out.push("");
-    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
+    out.push("*To reorder the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
     out.push("*To combine codes, use AND, OR, and NOT in capital letters in that same line, with parentheses if needed, for example: fear appeal AND NOT humor. The expression is checked against the codes on each extract. Commas still mean \"or\".*");
     out.push("");
@@ -481,20 +494,13 @@ content: |-
     }
 
     out.push("## Evidence");
-    if (!codes.length) {
+    if (!flat.length) {
       out.push("");
       out.push("> Nothing to show. Check the codes line above. A Code Overview lists the exact spelling of the codes you have applied.");
     }
-    for (var n = 0; n < codes.length; n++) {
-      var list = sharedObj.byCode[codes[n]];
+    for (var p2 = 0; p2 < flat.length; p2++) {
       out.push("");
-      out.push("### " + codes[n]);
-      out.push("");
-      out.push("*" + list.length + " extract(s)*");
-      for (var p = 0; p < list.length; p++) {
-        out.push("");
-        out.push(sharedObj.renderExtract(list[p]));
-      }
+      out.push(sharedObj.renderExtract(flat[p2]));
     }
 
     out.push("");
