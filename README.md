@@ -62,7 +62,7 @@ twelve names from the table above.
 Tips that save trouble later:
 
 - Spell each code the same way every time, including capitalization. `Fear appeal` and
-  `fear appeal` count as two different codes in the Code Report.
+  `fear appeal` count as two different codes in the Code Overview.
 - One highlight can carry several codes; add several tags.
 - Image or area annotations have no text to quote. If you code one, also write a comment on it,
   or the report will list it as skipped.

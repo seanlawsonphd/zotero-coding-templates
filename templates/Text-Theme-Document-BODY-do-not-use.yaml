@@ -1,0 +1,417 @@
+# Better Notes template share code. To install: copy this whole file's contents,
+# then in Zotero choose Tools -> New Template from Clipboard, and click OK.
+# Do not paste this into the Note Template Editor directly.
+name: "[Text] Theme Document BODY (do not use)"
+content: |-
+  // @use-refresh
+  // @use-markdown
+  ${{
+    var ask = function (title, msg, def) {
+      try {
+        var box = { value: def || "" };
+        var ok = Services.prompt.prompt(null, title, msg, box, null, {});
+        return ok ? box.value : "";
+      } catch (e) {
+        try {
+          return Zotero.getMainWindow().prompt(msg, def || "") || "";
+        } catch (e2) {
+          return "";
+        }
+      }
+    };
+
+    var clean = function (s) {
+      return (s || "").replace(/\s+/g, " ").trim();
+    };
+
+    var scope = function (item) {
+      var lib = Zotero.Libraries.get(item.libraryID);
+      return lib && lib.isGroup ? "groups/" + lib.id : "library";
+    };
+
+
+    // Full reference for a source, in APA style. Change the style id below to use
+    // another installed citation style.
+    var citeFormat = "bibliography=http://www.zotero.org/styles/apa";
+    var citeCache = {};
+    var mdEscape = function (s) {
+      return (s || "").replace(/([\\\x60*_\[\]<>])/g, "\\$1");
+    };
+    var fullCite = function (item, fallback) {
+      var target = item;
+      try {
+        if (item.isAttachment() && item.parentItemID) {
+          target = Zotero.Items.get(item.parentItemID) || item;
+        }
+      } catch (e) {
+        target = item;
+      }
+      if (citeCache[target.id]) return citeCache[target.id];
+      var text = "";
+      try {
+        if (target.isRegularItem()) {
+          var res = Zotero.QuickCopy.getContentFromItems([target], citeFormat);
+          text = ((res && res.text) || "").replace(/\s+/g, " ").trim();
+        }
+      } catch (e) {
+        text = "";
+      }
+      if (!text) text = fallback;
+      citeCache[target.id] = text;
+      return text;
+    };
+
+    var describe = function (item) {
+      var creators = item.getCreators();
+      var author = "No author";
+      if (creators.length === 1) {
+        author = creators[0].lastName || creators[0].firstName || "No author";
+      } else if (creators.length > 1) {
+        author = (creators[0].lastName || creators[0].firstName) + " et al.";
+      }
+      var date = item.getField("date") || "";
+      var m = date.match(/\d{4}/);
+      var year = m ? m[0] : "n.d.";
+      var outlet =
+        item.getField("publicationTitle") ||
+        item.getField("websiteTitle") ||
+        item.getField("publisher") ||
+        item.getField("blogTitle") ||
+        "";
+      return {
+        label: author + " (" + year + ")",
+        title: item.getField("title") || "Untitled",
+        outlet: outlet,
+        link: "zotero://select/" + scope(item) + "/items/" + item.key,
+        cite: fullCite(
+          item,
+          author + " (" + year + "). " + (item.getField("title") || "Untitled") +
+            (outlet ? ". " + outlet : "") + "."
+        )
+      };
+    };
+
+    var harvest = async function (item) {
+      var source = describe(item);
+      var attIDs = item.isAttachment() ? [item.id] : item.getAttachments();
+      var out = [];
+      var skipped = [];
+      for (var i = 0; i < attIDs.length; i++) {
+        var att = Zotero.Items.get(attIDs[i]);
+        if (!att) {
+          try {
+            att = await Zotero.Items.getAsync(attIDs[i]);
+          } catch (e) {
+            continue;
+          }
+        }
+        if (!att) continue;
+        var anns = [];
+        try {
+          anns = att.getAnnotations() || [];
+        } catch (e) {
+          anns = [];
+        }
+        for (var j = 0; j < anns.length; j++) {
+          var ann = anns[j];
+          var text = clean(ann.annotationText);
+          var memo = clean(ann.annotationComment);
+          var codes = ann
+            .getTags()
+            .map(function (t) { return t.tag; })
+            .filter(function (t) { return t && t.indexOf("zotero://") !== 0; });
+          if (!codes.length) continue;
+          // Coded, but nothing to quote. Usually an image or area annotation.
+          // Record it so the report can say so instead of dropping it silently.
+          if (!text && !memo) {
+            skipped.push({ codes: codes, source: source });
+            continue;
+          }
+          out.push({
+            text: text,
+            memo: memo,
+            codes: codes,
+            source: source,
+            page: ann.annotationPageLabel || "",
+            link:
+              "zotero://open/" + scope(item) + "/items/" +
+              att.key + "?annotation=" + ann.key
+          });
+        }
+      }
+      return { source: source, extracts: out, skipped: skipped };
+    };
+
+    var renderExtract = function (e) {
+      var lines = [];
+      lines.push(e.text ? "> " + e.text : "> *(no highlighted text, memo only)*");
+      lines.push("> ");
+      var cite = "> **Source:** " + mdEscape(e.source.cite);
+      if (e.page) cite += " (p. " + e.page + ")";
+      cite += " [\\[Open highlight\\]](" + e.link + ")";
+      lines.push(cite);
+      if (e.memo) {
+        lines.push("> ");
+        lines.push("> **Memo:** " + e.memo);
+      }
+      return lines.join("\n");
+    };
+
+    var findCollection = function (libraryID, name) {
+      var all = [];
+      try {
+        all = Zotero.Collections.getByLibrary(libraryID, true) || [];
+      } catch (e) {
+        all = [];
+      }
+      var want = name.toLowerCase();
+      for (var i = 0; i < all.length; i++) {
+        if ((all[i].name || "").toLowerCase() === want) return all[i];
+      }
+      for (var k = 0; k < all.length; k++) {
+        if ((all[k].name || "").toLowerCase().indexOf(want) !== -1) return all[k];
+      }
+      return null;
+    };
+
+    // ---------- resolve the scope ----------
+    var pane = null;
+    try {
+      pane = Zotero.getActiveZoteroPane();
+    } catch (e) {
+      pane = null;
+    }
+    if (!pane) {
+      try {
+        pane = Zotero.getMainWindow().ZoteroPane;
+      } catch (e) {
+        pane = null;
+      }
+    }
+
+    var coll = null;
+    if (pane && typeof pane.getSelectedCollection === "function") {
+      try {
+        coll = pane.getSelectedCollection() || null;
+      } catch (e) {
+        coll = null;
+      }
+    }
+
+    var libraryID = coll ? coll.libraryID : Zotero.Libraries.userLibraryID;
+    var wholeLibrary = false;
+
+    if (_env.dryRun) {
+      return "> Preview mode does not scan the library.";
+    }
+
+    if (!coll) {
+      var typed = clean(
+        ask(
+          "Theme Document",
+          "No collection is highlighted in the left pane. Type a collection name to scan, or type * to scan the entire library.",
+          ""
+        )
+      );
+      if (typed === "*") {
+        wholeLibrary = true;
+      } else if (typed) {
+        coll = findCollection(libraryID, typed);
+        if (!coll) {
+          return "> No collection named **" + typed +
+            "** was found. Check the spelling, or click the collection in the left pane before running this template.";
+        }
+      } else {
+        return "> Nothing to scan. Click a collection in the left pane and run this template again, or type a collection name at the prompt.";
+      }
+    }
+
+    // On refresh, reuse the theme name and code list already recorded in the
+    // note rather than prompting again. Editing that line in the note and
+    // refreshing is how a student regroups codes into a different theme.
+    var prior = null;
+    try {
+      if (targetNoteItem && typeof targetNoteItem.getNote === "function") {
+        var plain = (targetNoteItem.getNote() || "")
+          .replace(/<[^>]+>/g, "\n")
+          .replace(/&nbsp;/g, " ")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, "\"")
+          .replace(/&#39;/g, "'");
+        var mCodes = plain.match(/Codes in this theme:\s*([^\n]*)/);
+        var priorCodes = mCodes ? clean(mCodes[1]) : "";
+        if (priorCodes && priorCodes.indexOf("(none yet)") === -1) {
+          prior = { codes: priorCodes };
+        }
+      }
+    } catch (e) {
+      prior = null;
+    }
+
+    var codeInput;
+    if (prior) {
+      codeInput = prior.codes;
+    } else {
+      codeInput = ask(
+        "Theme Document",
+        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final.",
+        ""
+      );
+    }
+
+    var declared = codeInput
+      .split(",")
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+    var wanted = new Set(declared.map(function (c) { return c.toLowerCase(); }));
+
+    // ---------- gather top-level items ----------
+    var items = [];
+    var seenIDs = new Set();
+    var keep = function (it) {
+      if (!it || seenIDs.has(it.id)) return;
+      if (it.isNote && it.isNote()) return;
+      if (it.isAnnotation && it.isAnnotation()) return;
+      if (it.isAttachment && it.isAttachment() && it.parentItemID) return;
+      seenIDs.add(it.id);
+      items.push(it);
+    };
+
+    var scopeName = "Entire library";
+    if (wholeLibrary) {
+      var all = await Zotero.Items.getAll(libraryID, true);
+      for (var a = 0; a < all.length; a++) keep(all[a]);
+    } else {
+      scopeName = coll.name;
+      var walk = function (c) {
+        var kids = [];
+        try { kids = c.getChildItems() || []; } catch (e) { kids = []; }
+        for (var i = 0; i < kids.length; i++) keep(kids[i]);
+        var subs = [];
+        try { subs = c.getChildCollections() || []; } catch (e) { subs = []; }
+        for (var j = 0; j < subs.length; j++) walk(subs[j]);
+      };
+      walk(coll);
+    }
+
+    // ---------- harvest, filtered to the declared codes ----------
+    var byCode = {};
+    var seenCodes = new Set();
+    var matchedSources = new Set();
+    var skippedAll = [];
+    var sourceList = [];
+    for (var n = 0; n < items.length; n++) {
+      var res = await harvest(items[n]);
+      sourceList.push(res.source);
+      // Skipped annotations still count as codes seen, so a code that exists only
+      // on image annotations is not reported as a typo.
+      for (var s = 0; s < res.skipped.length; s++) {
+        var sk = res.skipped[s];
+        for (var t = 0; t < sk.codes.length; t++) {
+          seenCodes.add(sk.codes[t]);
+          if (wanted.has(sk.codes[t].toLowerCase())) skippedAll.push(sk);
+        }
+      }
+      for (var x = 0; x < res.extracts.length; x++) {
+        var ex = res.extracts[x];
+        for (var y = 0; y < ex.codes.length; y++) {
+          var c = ex.codes[y];
+          seenCodes.add(c);
+          if (!wanted.has(c.toLowerCase())) continue;
+          if (!byCode[c]) byCode[c] = [];
+          byCode[c].push(ex);
+          matchedSources.add(ex.source.link);
+        }
+      }
+    }
+
+    // ---------- render ----------
+    // Codes appear in the order they are listed in "Codes in this theme", so
+    // reordering that line regroups the evidence.
+    var codes = [];
+    var found = new Set();
+    for (var d = 0; d < declared.length; d++) {
+      var want = declared[d].toLowerCase();
+      Object.keys(byCode).forEach(function (key) {
+        if (key.toLowerCase() === want && codes.indexOf(key) === -1) {
+          codes.push(key);
+          found.add(want);
+        }
+      });
+    }
+    var missing = declared.filter(function (c) {
+      return !found.has(c.toLowerCase());
+    });
+    var seenList = Array.from(seenCodes).sort(function (a, b) {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
+    });
+
+    var total = 0;
+    for (var t2 = 0; t2 < codes.length; t2++) total += byCode[codes[t2]].length;
+
+    var out = [];
+    out.push("<span style=\"color: #e03131\"><em><strong>Everything from here down to the line below Analytical Notes is regenerated every time you refresh this note.</strong> Do not type inside it. Write your own notes below that line, or a refresh will erase them.</em></span>");
+    out.push("");
+    out.push("## Scope");
+    out.push("");
+    out.push(
+      "- **Built from " + codes.length + " code(s), " + total + " extract(s), " +
+      matchedSources.size + " source(s), out of " + items.length + " sources scanned.**"
+    );
+    out.push("- **Scanned:** " + (wholeLibrary ? "the entire library" : "the collection " + mdEscape(scopeName)) + " (" + items.length + " source(s))");
+    var shown = sourceList.slice(0, 50);
+    for (var s2 = 0; s2 < shown.length; s2++) {
+      out.push("  - " + mdEscape(shown[s2].cite));
+    }
+    if (sourceList.length > shown.length) {
+      out.push("  - and " + (sourceList.length - shown.length) + " more");
+    }
+    out.push("- **Codes in this theme:** " + (declared.length ? declared.join(", ") : "*(none yet)*"));
+    out.push("");
+    out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
+    out.push("");
+
+    if (skippedAll.length) {
+      var skCodes = new Set();
+      for (var q = 0; q < skippedAll.length; q++) {
+        skippedAll[q].codes.forEach(function (c) {
+          if (wanted.has(c.toLowerCase())) skCodes.add(c);
+        });
+      }
+      out.push("> **" + skippedAll.length + " coded annotation(s) in this theme were skipped.** They have neither highlighted text nor a memo, so there is nothing to quote. These are usually image or area annotations. Add a memo to the annotation if you want it to appear here. Codes affected: " + Array.from(skCodes).sort().join(", "));
+      out.push("");
+    }
+
+    if (missing.length) {
+      out.push("> **Check these codes:** " + missing.join(", ") + ". No quotable extract matched them. Codes match on exact spelling, so look for a typo or different capitalization.");
+      out.push(">");
+      out.push("> Codes actually present in what was scanned: " + (seenList.length ? seenList.join(", ") : "none"));
+      out.push("");
+    }
+
+    out.push("## Evidence");
+    if (!codes.length) {
+      out.push("");
+      out.push("> Nothing to show yet. Run the Code Report template first to see the exact spelling of the codes you have applied.");
+    }
+    for (var n2 = 0; n2 < codes.length; n2++) {
+      var list = byCode[codes[n2]];
+      out.push("");
+      out.push("### " + codes[n2]);
+      out.push("");
+      out.push("*" + list.length + " extract(s)*");
+      for (var p2 = 0; p2 < list.length; p2++) {
+        out.push("");
+        out.push(renderExtract(list[p2]));
+      }
+    }
+
+    out.push("");
+    out.push("## Analytical Notes");
+    out.push("");
+    out.push("*Write your thoughts about this theme after the line below. At minimum, you should include a \"Theme definition\" that explains, in two or three sentences, what this theme is about and what holds these codes together as a coherent theme. You can also add any other observations or insights that will be helpful when writing up your final report.*");
+
+    return out.join("\n");
+  }}$
