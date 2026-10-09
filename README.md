@@ -1,8 +1,7 @@
 # Coding and theming in Zotero: the Code Report and Theme Document templates
 
-These templates turn Zotero into a simple qualitative-coding tool for COMM 5610 (IT & Global
-Conflict, University of Utah). You read your sources in Zotero, highlight passages, and tag each
-highlight with a **code**. The templates then build two kinds of notes for you:
+These templates turn Zotero into a simple qualitative-coding tool for class projects. You read
+your sources in Zotero, highlight passages, and tag each highlight with a **code**. The templates then build two kinds of notes for you:
 
 - A **Code Report** gathers every coded passage from your sources, grouped by code, with a
   quotation, a citation that links back to the exact spot in the source, and any memo you wrote.
@@ -170,3 +169,10 @@ Group libraries work the same way; the links inside the notes point into the gro
   name.
 - Better Notes' own template documentation:
   https://github.com/windingwind/zotero-better-notes/blob/master/docs/about-note-template.md
+
+## License
+
+The templates and this guide are by Sean Lawson and are released under the
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/)
+(CC BY 4.0). You may share and adapt them for any purpose, including commercially, as long as you
+give appropriate credit. See [LICENSE](LICENSE) for the full text.
