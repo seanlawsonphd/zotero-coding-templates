@@ -26,8 +26,8 @@ content: |-
     // On refresh, reuse the theme name and code list already recorded in the
     // note rather than prompting again. Editing that line in the note and
     // refreshing is how a student regroups codes into a different theme.
-    // ---------- filter ----------
-    // A Boolean filter over an extract's own codes. Operators are AND, OR and
+    // ---------- combining codes ----------
+    // A Boolean expression over an extract's own codes. Operators are AND, OR and
     // NOT in capital letters, with parentheses for grouping. Anything else is a
     // code name; put a code in double quotes if it contains an operator word.
     var parseFilter = function (text) {
@@ -70,6 +70,8 @@ content: |-
 
       var pos = 0;
       var codes = [];
+      var positive = [];
+      var negDepth = 0;
       var peek = function () { return tokens[pos] ? tokens[pos].t : null; };
       var parseAtom = function () {
         var tk = tokens[pos];
@@ -84,6 +86,7 @@ content: |-
         if (tk.t === "code") {
           pos++;
           codes.push(tk.raw);
+          if (negDepth % 2 === 0) positive.push(tk.raw);
           var v = tk.v;
           return function (set) { return set.has(v); };
         }
@@ -92,7 +95,9 @@ content: |-
       var parseNot = function () {
         if (peek() === "NOT") {
           pos++;
+          negDepth++;
           var negated = parseNot();
+          negDepth--;
           return function (set) { return !negated(set); };
         }
         return parseAtom();
@@ -122,12 +127,52 @@ content: |-
         if (pos < tokens.length) {
           throw new Error("there is an unexpected " + (tokens[pos].raw || tokens[pos].t));
         }
-        return { test: test, codes: codes, error: "" };
+        return { test: test, codes: codes, positive: positive, error: "" };
       } catch (e) {
-        return { test: null, codes: codes, error: e.message };
+        return { test: null, codes: codes, positive: positive, error: e.message };
       }
     };
-    var filterText = "";
+
+    // Reads the "Codes in this theme" line. Commas separate alternatives; each
+    // alternative is a single code or an expression such as: a AND NOT b
+    var parseCodesLine = function (text) {
+      var raw = (text || "").replace(/\s+/g, " ").trim();
+      var hasOps = function (s) {
+        return /(^|[\s(])(AND|OR|NOT)(?=[\s(]|$)/.test(s) || /[()]/.test(s);
+      };
+      var spec = { raw: raw, declared: [], mentioned: [], usesLogic: false, errors: [] };
+      var tests = [];
+      var add = function (list, name) {
+        var low = name.toLowerCase();
+        if (!list.some(function (x) { return x.toLowerCase() === low; })) list.push(name);
+      };
+      raw.split(",").forEach(function (part) {
+        part = part.trim();
+        if (!part) return;
+        if (!hasOps(part)) {
+          var name = part.replace(/^["“]|["”]$/g, "").trim();
+          if (!name) return;
+          add(spec.declared, name);
+          add(spec.mentioned, name);
+          var low = name.toLowerCase();
+          tests.push(function (set) { return set.has(low); });
+          return;
+        }
+        spec.usesLogic = true;
+        var parsed = parseFilter(part);
+        if (parsed.error) {
+          spec.errors.push(part + " (" + parsed.error + ")");
+          return;
+        }
+        parsed.positive.forEach(function (c) { add(spec.declared, c); });
+        parsed.codes.forEach(function (c) { add(spec.mentioned, c); });
+        tests.push(parsed.test);
+      });
+      spec.test = function (set) {
+        return tests.some(function (f) { return f(set); });
+      };
+      return spec;
+    };
 
     var prior = null;
     try {
@@ -141,9 +186,6 @@ content: |-
           .replace(/&quot;/g, "\"")
           .replace(/&#39;/g, "'");
         var mCodes = plain.match(/Codes in this theme:\s*([^\n]*)/);
-        var mFilter = plain.match(/Filter:\s*([^\n]*)/);
-        filterText = mFilter ? mFilter[1].replace(/\s+/g, " ").trim() : "";
-        if (filterText.indexOf("(none)") !== -1) filterText = "";
         var mName = plain.match(/Theme:\s*([^\n]*)/);
         var priorCodes = mCodes ? clean0(mCodes[1]) : "";
         if (priorCodes && priorCodes.indexOf("(none yet)") === -1) {
@@ -162,7 +204,7 @@ content: |-
     } else if (!_env.dryRun) {
       codeInput = sharedObj.ask(
         "Theme Document",
-        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final.",
+        "Which codes belong to this theme? Separate them with commas, spelled exactly as you tagged them. You can edit this list in the note afterwards and refresh, so it does not have to be final. To combine codes, use AND, OR and NOT in capital letters, for example: fear appeal AND NOT humor",
         ""
       );
     }
@@ -176,9 +218,9 @@ content: |-
       sharedObj.declared.map(function (c) { return c.toLowerCase(); })
     );
     sharedObj.byCode = {};
-    sharedObj.filterText = filterText;
-    sharedObj.filter = filterText ? parseFilter(filterText) : null;
-    sharedObj.hidden = 0;
+    sharedObj.spec = parseCodesLine(codeInput);
+    sharedObj.declared = sharedObj.spec.declared;
+    sharedObj.wanted = new Set(sharedObj.declared.map(function (c) { return c.toLowerCase(); }));
     sharedObj.seen = new Set();
     sharedObj.sources = 0;
     sharedObj.matchedSources = new Set();
@@ -344,17 +386,18 @@ content: |-
     }
     for (var i = 0; i < res.extracts.length; i++) {
       var e = res.extracts[i];
+      e.codes.forEach(function (c0) { sharedObj.seen.add(c0); });
       var exSet = new Set(e.codes.map(function (c0) { return c0.toLowerCase(); }));
-      var passes = !(sharedObj.filter && sharedObj.filter.test) || sharedObj.filter.test(exSet);
-      if (!passes && e.codes.some(function (c0) { return sharedObj.wanted.has(c0.toLowerCase()); })) sharedObj.hidden += 1;
-      for (var j = 0; j < e.codes.length; j++) {
-        var c = e.codes[j];
-        sharedObj.seen.add(c);
-        if (!passes || !sharedObj.wanted.has(c.toLowerCase())) continue;
+      if (!sharedObj.spec.test(exSet)) continue;
+      var listed = e.codes.filter(function (c0) { return sharedObj.wanted.has(c0.toLowerCase()); });
+      // With AND/OR/NOT each extract is shown once; a plain list shows it
+      // under every listed code it carries.
+      var keys = sharedObj.spec.usesLogic ? [listed.length ? listed[0] : e.codes[0]] : listed;
+      keys.forEach(function (c) {
         if (!sharedObj.byCode[c]) sharedObj.byCode[c] = [];
         sharedObj.byCode[c].push(e);
-        sharedObj.matchedSources.add(e.source.link);
-      }
+      });
+      sharedObj.matchedSources.add(e.source.link);
     }
     return "";
   }}$
@@ -376,10 +419,11 @@ content: |-
       });
     }
     var seenLower = new Set(Array.from(sharedObj.seen).map(function (c) { return c.toLowerCase(); }));
-    var filterObj = sharedObj.filter;
-    var filterShown = sharedObj.filterText;
-    var hiddenCount = sharedObj.hidden;
-    var missing = sharedObj.declared.filter(function (c) {
+    var spec = sharedObj.spec;
+    Object.keys(sharedObj.byCode).forEach(function (key) {
+      if (codes.indexOf(key) === -1) codes.push(key);
+    });
+    var missing = spec.mentioned.filter(function (c) {
       return !seenLower.has(c.toLowerCase());
     });
     var seenList = Array.from(sharedObj.seen).sort(function (a, b) {
@@ -407,25 +451,15 @@ content: |-
     if (sharedObj.sourceList.length > shown.length) {
       out.push("  - and " + (sharedObj.sourceList.length - shown.length) + " more");
     }
-    out.push("- **Codes in this theme:** " + (sharedObj.declared.length ? sharedObj.declared.join(", ") : "*(none yet)*"));
-    out.push("- **Filter:** " + (filterShown ? sharedObj.mdEscape(filterShown) : "*(none)*"));
-    if (filterObj && filterObj.test && hiddenCount) {
-      out.push("  - " + hiddenCount + " extract(s) with these codes were left out by the filter");
-    }
+    out.push("- **Codes in this theme:** " + (spec.raw ? spec.raw : "*(none yet)*"));
     out.push("");
     out.push("*To regroup the evidence, change the order of the codes in the line above. To add a code to this theme, add it to that line. Then refresh this note (More Options, then Update content from templates).*");
     out.push("");
-    out.push("*To show only some of the extracts, write a filter in the Filter line and refresh. Use AND, OR, and NOT in capital letters, with parentheses if needed, for example: fear appeal AND NOT humor. The filter is checked against the codes on each extract.*");
+    out.push("*To combine codes, use AND, OR, and NOT in capital letters in that same line, with parentheses if needed, for example: fear appeal AND NOT humor. The expression is checked against the codes on each extract. Commas still mean \"or\".*");
     out.push("");
-    if (filterObj && filterObj.error) {
-      out.push("> **The filter was not understood, so it was ignored:** " + filterObj.error + ". Write it like this: fear appeal AND NOT humor. Operators must be in capital letters.");
+    if (spec.errors.length) {
+      out.push("> **Part of the codes line was not understood and was ignored:** " + spec.errors.join("; ") + ". Write it like this: fear appeal AND NOT humor. Operators must be in capital letters.");
       out.push("");
-    } else if (filterObj) {
-      var unknown = filterObj.codes.filter(function (c) { return !seenLower.has(c.toLowerCase()); });
-      if (unknown.length) {
-        out.push("> **Check the filter:** these codes do not appear in what was scanned: " + unknown.join(", ") + ". Codes match on exact spelling.");
-        out.push("");
-      }
     }
 
     if (sharedObj.skipped.length) {
@@ -449,7 +483,7 @@ content: |-
     out.push("## Evidence");
     if (!codes.length) {
       out.push("");
-      out.push("> Nothing to show. Check the codes and the filter above. A Code Overview lists the exact spelling of the codes you have applied.");
+      out.push("> Nothing to show. Check the codes line above. A Code Overview lists the exact spelling of the codes you have applied.");
     }
     for (var n = 0; n < codes.length; n++) {
       var list = sharedObj.byCode[codes[n]];

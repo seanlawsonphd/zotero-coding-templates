@@ -152,24 +152,24 @@ The note has a generated block followed by space for your writing:
 To reorder the evidence, reorder that line. To add a code to the theme, add it to that line (to
 drop one, delete it). Then refresh the note.
 
-**Filtering with AND, OR, and NOT.** The **Filter:** line under Scope narrows which extracts are
-shown. Leave it as *(none)* to show every extract that has any of the theme's codes. To filter, type
-an expression there and refresh:
+**Combining codes with AND, OR, and NOT.** The codes prompt, and the **Codes in this theme:** line,
+accept more than a plain list. Type an expression there (and refresh, if the note already exists):
 
-| Filter | Shows extracts that |
+| Codes in this theme | Shows extracts that |
 |---|---|
+| `fear appeal, threat` | carry either code (a comma means "or") |
+| `fear appeal AND threat` | carry both codes on the same highlight |
 | `fear appeal AND NOT humor` | are tagged fear appeal and are not also tagged humor |
-| `fear appeal AND threat` | carry both tags on the same highlight |
-| `NOT humor` | are not tagged humor |
 | `(fear appeal OR threat) AND NOT humor` | carry either of the first two and not humor |
 
 - Write **AND**, **OR**, and **NOT** in capital letters. A lowercase "and" is read as part of a code
   name, so a code called `law and order` works as is.
-- The filter is checked against the codes on **each extract** (each highlight), not the whole source.
-- An extract still needs at least one code from the **Codes in this theme:** line to appear, and
-  evidence is still grouped under those codes.
-- Scope reports how many extracts the filter left out. If the filter cannot be read, the note says
-  so and shows everything.
+- The expression is checked against the codes on **each extract** (each highlight), not the whole
+  source.
+- With a plain list, an extract appears under every listed code it carries. With AND, OR, or NOT,
+  each extract appears once.
+- The theme **name** is only a title. Put the expression in the codes line, not in the name.
+- If part of the line cannot be read, the note says so.
 - Put a code in double quotes if its name contains a capitalized operator word or parentheses.
 
 ## Refreshing a note after more coding
