@@ -14,7 +14,19 @@ import re
 import sys
 
 NAMES = [
+    "[Text] Code Overview (Collection)",
+    "[Text] Code Overview BODY (do not use)",
+    "[Item] Code Overview",
+    "[Item] Code Overview BODY (do not use)",
+    "[Text] Code Report (Collection)",
+    "[Text] Code Report BODY (do not use)",
     "[Item] Code Report",
+    "[Item] Code Report BODY (do not use)",
+    "[Text] Theme Document (Collection)",
+    "[Text] Theme Document BODY (do not use)",
+    "[Item] Theme Document",
+    "[Item] Theme Document BODY (do not use)",
+] Code Report",
     "[Item] Code Report BODY (do not use)",
     "[Item] Theme Document",
     "[Item] Theme Document BODY (do not use)",

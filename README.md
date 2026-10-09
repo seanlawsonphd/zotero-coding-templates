@@ -1,30 +1,29 @@
-# Coding and theming in Zotero: the Code Report and Theme Document templates
+# Coding and theming in Zotero: Code Overview, Code Report, and Theme Document templates
 
 These templates turn Zotero into a simple qualitative-coding tool for class projects. You read
-your sources in Zotero, highlight passages, and tag each highlight with a **code**. The templates then build two kinds of notes for you:
+your sources in Zotero, highlight passages, and tag each highlight with a **code**. The templates
+then build three kinds of notes for you:
 
-- A **Code Report** gathers every coded passage from your sources, grouped by code, with a
-  quotation, a citation that links back to the exact spot in the source, and any memo you wrote.
+- A **Code Overview** counts every code you have used: how many extracts and sources each has.
+- A **Code Report** gathers every passage for **one code**, with a quotation, a full reference, a
+  link back to the exact spot in the source, and any memo you wrote.
 - A **Theme Document** gathers the passages for a chosen group of codes (a theme) and gives you a
   place to write your analysis of that theme.
 
-Both notes can be **refreshed** after you do more coding, so you never rebuild them by hand.
+All three can be **refreshed** after you do more coding, so you never rebuild them by hand.
 
 ## What is in this folder
 
-| Template (as it appears in Zotero) | Use it for |
-|---|---|
-| `[Text] Code Report (Collection)` | A code report for **everything in one collection** (recommended) |
-| `[Item] Code Report` | A code report for **items you have selected** in the middle pane |
-| `[Text] Theme Document (Collection)` | A theme document built from **one collection** (recommended) |
-| `[Item] Theme Document` | A theme document built from **selected items** |
-| `[Text] Code Report BODY (do not use)` | Helper used by the Collection version. Install it, never run it |
-| `[Text] Theme Document BODY (do not use)` | Helper used by the Collection version. Install it, never run it |
-| `[Item] Code Report BODY (do not use)` | Helper used by the selected-items version. Install it, never run it |
-| `[Item] Theme Document BODY (do not use)` | Helper used by the selected-items version. Install it, never run it |
+Each kind of note comes in two versions. Run the one that fits what you want to scan:
 
-The `templates` folder holds one file per template. All eight must be installed; the four "BODY"
-helpers do the real work for the templates that call them by name.
+| To scan | Code Overview | Code Report | Theme Document |
+|---|---|---|---|
+| **One collection** (recommended) | `[Text] Code Overview (Collection)` | `[Text] Code Report (Collection)` | `[Text] Theme Document (Collection)` |
+| **Items you have selected** | `[Item] Code Overview` | `[Item] Code Report` | `[Item] Theme Document` |
+
+Each of those six has a helper whose name ends in **BODY (do not use)**. The helpers do the real
+work and are called by name, so they must be installed, but you never run them yourself. That
+makes **twelve files** in the `templates` folder, and all twelve must be installed.
 
 ## Before you start
 
@@ -39,7 +38,7 @@ helpers do the real work for the templates that call them by name.
 Templates live inside your own copy of Zotero; they are not shared through Zotero sync, so every
 student does this once.
 
-For **each of the eight files** in the `templates` folder:
+For **each of the twelve files** in the `templates` folder:
 
 1. Open the file on GitHub and click **Raw** (top right of the file view), or open it in any text
    editor.
@@ -48,7 +47,7 @@ For **each of the eight files** in the `templates` folder:
 3. In Zotero, choose **Tools → New Template from Clipboard** and click **OK**.
 
 To check: **Tools → Template Editor** lists every template you have installed. You should see all
-eight names from the table above.
+twelve names from the table above.
 
 ## Step 1: Code your sources
 
@@ -70,42 +69,60 @@ Tips that save trouble later:
 - Put the sources for one project in one **collection**. The Collection templates work on whatever
   collection is highlighted in the left pane.
 
-## Step 2: Build a Code Report
+## Step 2: Build a Code Overview
 
-Use this after each round of coding to see all your codes, how often they occur, and every passage
-behind them.
+Use this after each round of coding to see all your codes and how often they occur.
 
 1. In the left pane, click the **collection** that holds your sources.
 2. Click the **New Note** button above the item list (the note icon with a plus) and choose
    **New Standalone Note from Template**. (The same entry is in the **File** menu.)
-3. Choose **[Text] Code Report (Collection)**.
+3. Choose **[Text] Code Overview (Collection)**.
 4. Type a title for the note (it becomes the note's name in your library) and click **OK**.
 
-The note has the same layout as a Theme Document:
+The note contains:
 
-- A **warning in red** that everything down to the line under Analytical Notes is regenerated on
-  refresh.
+- A **warning in red** that everything down to the line at the bottom is regenerated on refresh.
 - **Scope.** A count of codes, extracts, and sources, what was scanned with the full reference of
-  every source, and when the report was generated.
+  every source, and when the overview was generated.
 - **Codebook at a glance.** A table of every code with how many extracts and sources it has.
-- **Evidence.** Each code as a heading, in alphabetical order, then each passage as a quotation
-  with its **full reference** (APA style), an **[Open highlight]** link back to the exact spot in
-  the source, and any memo. Passages that carry other codes too are marked *Also coded:*.
-- **Sources with no coded extracts.** Sources you have not coded yet.
-- **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
-  never touched by a refresh. It starts with an **Insights & Observations** heading: a good place
-  to note which codes might belong together as themes, or which overlap and need renaming.
+  Check it for near-duplicates such as `Fear appeal` and `fear appeal`.
+- **Sources with no coded extracts.** Sources in the collection you have not coded yet.
+  (Collection version only.)
 
 If no collection is highlighted, the template asks you to type a collection name, or `*` to scan
 your whole library.
 
 **Selected items instead of a collection:** select the items in the middle pane, then use
-**[Item] Code Report**. When Zotero asks for the data source, choose **Use selected items in
-library**.
+**[Item] Code Overview**. When Zotero asks for the data source, choose **Use selected items in
+library**. This version shows Scope and the codebook table only.
 
-## Step 3: Build Theme Documents
+## Step 3: Build a Code Report for one code
 
-Once the Code Report shows you your codes, group related codes into **themes**. Make one Theme
+Use this to read everything you coded with a single code, side by side.
+
+1. Click the collection in the left pane (or select items and use the **[Item]** version).
+2. **New Note → New Standalone Note from Template → [Text] Code Report (Collection)**.
+3. Type the **code**, spelled exactly as you tagged it. The note is named "Code Report: " followed
+   by the code.
+
+The note contains:
+
+- The red refresh warning.
+- **Scope.** A count of extracts and sources, what was scanned, and the **Code:** line.
+- **Check this code** appears if nothing matched. It lists the codes that actually exist in what
+  was scanned, so you can spot a typo.
+- **Evidence.** Each passage as a quotation with its **full reference** (APA style), an
+  **[Open highlight]** link back to the exact spot in the source, and any memo. Passages that
+  carry other codes too are marked *Also coded:*.
+- **Analytical Notes.** Instructions, then a line. Everything **after that line is yours** and is
+  never touched by a refresh. It starts with an **Insights & Observations** heading.
+
+To switch the report to a different code, edit the **Code:** line and refresh. The note's title
+does not change by itself, so retype it if you switch codes.
+
+## Step 4: Build Theme Documents
+
+Once the Code Overview shows you your codes, group related codes into **themes**. Make one Theme
 Document per theme.
 
 1. Click the collection in the left pane.
@@ -152,10 +169,10 @@ holds the library, so the quotations and citations in the exported file are what
 | What you see | What to do |
 |---|---|
 | "No tagged highlights were found in these sources" | Your highlights have no tags. In the reader's annotation sidebar, add a tag to each highlight you want counted. Tags on the *item* do not count; tags on the *highlight* do |
-| "Check these codes: …" in a Theme Document | A code in your list is spelled differently from the tag. Copy the exact spelling from the "codes actually present" list or from the Code Report, edit the **Codes in this theme:** line, and refresh |
+| "Check these codes: …" in a Theme Document | A code in your list is spelled differently from the tag. Copy the exact spelling from the "codes actually present" list or from the Code Overview, edit the **Codes in this theme:** line, and refresh |
 | "N coded annotation(s) skipped" | Those are image or area annotations with no text and no memo. Add a comment to each one, then refresh |
 | "No collection named … was found" | Click the collection in the left pane before running the template, or type its name exactly |
-| The template is not listed in the picker | Install all eight files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
+| The template is not listed in the picker | Install all twelve files (see "Install the templates"). The Collection templates fail silently if their BODY helper is missing |
 | A note made before the templates were updated will not refresh properly | The templates were restructured. Make a new note from the template |
 | A Theme Document made before the templates were updated has no Theme Definition heading | Refreshing updates the generated block only. Type the two headings below the line yourself, or make a new Theme Document |
 | The references are not in the style you need | The templates use APA. An instructor can change the style id near the top of the two Theme Document templates in **Tools → Template Editor** |
